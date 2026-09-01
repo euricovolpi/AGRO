@@ -147,9 +147,41 @@ html[data-tema='papel'] .cabecalho-menu {
 .menu-overlay[hidden] {
   display: none;
 }
+.menu-overlay {
+  /* iOS: sem isto o botão fechar cai atrás da barra do sistema. */
+  padding-top: max(var(--gutter), env(safe-area-inset-top, 0px));
+  padding-bottom: max(var(--gutter), env(safe-area-inset-bottom, 0px));
+}
+.menu-fechar {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  right: var(--gutter);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  background: transparent;
+  border: 1px solid var(--linha-forte);
+  color: var(--creme);
+  font-family: var(--display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.menu-fechar:hover {
+  border-color: var(--ouro);
+  color: var(--ouro-claro);
+}
 .menu-overlay nav {
   display: grid;
   gap: 1.2rem;
+}
+.menu-overlay nav a {
+  /* Alvo de toque mínimo, mesmo para um link de uma palavra. */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 .menu-overlay nav a {
   font-family: var(--display);
@@ -171,24 +203,23 @@ html[data-tema='papel'] .cabecalho-menu {
 
 /* =========================== 00 · PRÓLOGO ============================== */
 
-.intro {
-  position: fixed;
-  inset: 0;
-  z-index: 95;
+/* O prólogo não é uma tela por cima da página: é a primeira camada da cena da
+   origem, que no topo do documento já ocupa a viewport inteira. É isso que
+   permite a linha dourada ser o mesmo elemento nos dois capítulos. */
+.prologo {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 58%;
+  z-index: 4;
   display: none;
-  place-items: center;
-  background: var(--noite);
-  clip-path: inset(0 0 0 0);
-}
-.motion-ready:not(.reduce-motion):not(.intro-vista) .intro {
-  display: grid;
-}
-.intro-lockup {
-  display: grid;
   gap: 0.4rem;
   text-align: center;
+  pointer-events: none;
 }
-.intro-linha {
+.motion-ready:not(.reduce-motion):not(.intro-vista) .prologo {
+  display: grid;
+}
+.prologo-linha {
   display: block;
   overflow: hidden;
   font-family: var(--display);
@@ -198,31 +229,15 @@ html[data-tema='papel'] .cabecalho-menu {
   font-size: clamp(1.1rem, 3.4vw, 2rem);
   letter-spacing: 0.22em;
 }
-.intro-linha > span {
+.prologo-linha > span {
   display: block;
   transform: translateY(110%);
 }
-.intro-cidade,
-.intro-ano {
+.prologo-cidade,
+.prologo-ano {
   font-size: clamp(0.68rem, 1.6vw, 0.86rem);
   color: var(--ouro);
   letter-spacing: 0.34em;
-}
-.intro-regua {
-  position: absolute;
-  left: 50%;
-  bottom: 34%;
-  translate: -50% 0;
-  width: 34vw;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--ouro) 20%,
-    var(--ouro) 80%,
-    transparent
-  );
-  transform: scaleX(0);
 }
 
 /* =========================== 01 · ORIGEM =============================== */
@@ -271,7 +286,10 @@ html[data-tema='papel'] .cabecalho-menu {
   left: 50%;
   top: 50%;
   translate: -50% -50%;
+  /* 34vw é o estado em que o prólogo entrega a linha para a origem. Sem JS
+     ela já nasce assim, como horizonte. */
   width: 34vw;
+  z-index: 2;
   height: 1px;
   background: linear-gradient(
     90deg,
@@ -743,22 +761,41 @@ html:not(.motion-ready) .campo-legenda {
   color: var(--papel);
   inset-inline: var(--gutter);
 }
-.reveal-marca {
+/* Índice histórico: pequeno, dourado, entra antes. Nunca disputa com o nome. */
+.reveal-indice {
   position: absolute;
-  top: 18%;
-  margin: 0;
+  top: 15%;
   inset-inline: 0;
+  margin: 0;
   text-align: center;
   font-family: var(--display);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: clamp(4rem, 21vw, 18rem);
-  line-height: 0.82;
-  letter-spacing: -0.02em;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(198, 161, 91, 0.42);
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+  color: var(--ouro);
   pointer-events: none;
-  user-select: none;
+}
+
+/* Nome do produto: entra depois e domina. É o que a pessoa reconhece na
+   sacola e no checkout, então é o que fica grande aqui. */
+.reveal-nome {
+  position: absolute;
+  bottom: 17%;
+  inset-inline: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(2rem, 7.6vw, 5.6rem);
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  color: var(--papel);
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 3;
 }
 .reveal-camisa {
   position: relative;
@@ -793,17 +830,8 @@ html:not(.motion-ready) .campo-legenda {
   text-align: center;
   z-index: 3;
 }
-.reveal-edicao {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.32em;
-  font-size: clamp(0.72rem, 1.4vw, 0.9rem);
-  color: var(--ouro-claro);
-}
 .reveal-tecnico {
-  margin: 0.5rem 0 0;
+  margin: 0;
   font-family: var(--display);
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -814,8 +842,10 @@ html:not(.motion-ready) .campo-legenda {
 /* Sem motion as duas frases e a marca precisam existir em fluxo. */
 html:not(.motion-ready) .reveal-frase,
 .reduce-motion .reveal-frase,
-html:not(.motion-ready) .reveal-marca,
-.reduce-motion .reveal-marca,
+html:not(.motion-ready) .reveal-indice,
+.reduce-motion .reveal-indice,
+html:not(.motion-ready) .reveal-nome,
+.reduce-motion .reveal-nome,
 html:not(.motion-ready) .reveal-selo-escudo,
 .reduce-motion .reveal-selo-escudo {
   position: static;
@@ -1318,6 +1348,49 @@ html[data-silencio='1'] .barra-compra {
   .rodape-grade {
     grid-template-columns: auto minmax(0, 1fr);
   }
+}
+
+/* ======================= CONFIGURADOR (variantes) ====================== */
+
+.mn-nome-produto {
+  display: grid;
+  gap: 0.3rem;
+}
+.mn-nome-produto h3 {
+  margin: 0;
+  color: var(--papel);
+}
+.mn-nome-produto p {
+  margin: 0;
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  color: rgba(235, 220, 194, 0.5);
+}
+
+/* `fieldset` traz borda, margem e padding do navegador; aqui ele é só um
+   agrupamento semântico para leitor de tela. */
+.mn-grupo-opcao,
+.mn-personalizacao {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.mn-grupo-opcao legend,
+.mn-personalizacao legend {
+  padding: 0;
+  width: 100%;
+}
+.mn-opcao[disabled] {
+  opacity: 0.32;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.mn-opcao[disabled]:hover {
+  border-color: var(--linha);
+  color: var(--texto);
 }
 
 /* ===================== PREVIEW DE PERSONALIZAÇÃO ======================= */

@@ -1,7 +1,6 @@
 import {useLoaderData} from 'react-router';
 import {Analytics} from '@shopify/hydrogen';
 import {CampaignMotionProvider} from '~/components/campaign/CampaignMotionProvider';
-import {IntroGate} from '~/components/campaign/IntroGate';
 import {SceneOriginLine} from '~/components/campaign/SceneOriginLine';
 import {SceneHero} from '~/components/campaign/SceneHero';
 import {SceneFieldMorph} from '~/components/campaign/SceneFieldMorph';
@@ -33,9 +32,13 @@ export async function loader({context}) {
 
 /**
  * O comércio nunca pode derrubar a narrativa: se a Storefront API não
- * responder, a página continua inteira com o preço de referência e o botão
- * desabilitado. Em desenvolvimento contra mock.shop, emprestamos a variante
- * de um produto qualquer só para o fluxo de sacola continuar testável.
+ * responder, a página continua inteira com o preço de referência e a compra
+ * desabilitada, dizendo o porquê.
+ *
+ * O que não fazemos: emprestar a variante de outro produto para o fluxo
+ * "parecer" funcional. Isso põe no carrinho uma peça que ninguém escolheu e
+ * cobra um preço que a página não mostrou.
+ *
  * @param {any} context
  */
 async function carregarProduto(context) {
@@ -47,21 +50,11 @@ async function carregarProduto(context) {
     });
     const normalizado = normalizarProduto(product);
     if (normalizado) return normalizado;
+    return produtoFallback('sem-produto');
   } catch (erro) {
-    console.error('Storefront: manto indisponível', erro);
+    console.error('Storefront indisponível', erro);
+    return produtoFallback('offline');
   }
-
-  try {
-    const {products} = await storefront.query(PRIMEIRA_VARIANTE_QUERY);
-    const variante = products?.nodes?.[0]?.variants?.nodes?.[0];
-    if (variante?.id) {
-      return {...produtoFallback('mock'), variantId: variante.id, variante};
-    }
-  } catch (erro) {
-    console.error('Storefront: catálogo indisponível', erro);
-  }
-
-  return produtoFallback('offline');
 }
 
 /**
@@ -78,8 +71,6 @@ export default function Home() {
   return (
     <CampaignMotionProvider>
       <div className="campanha">
-        <IntroGate />
-
         {/* ------------------------ ATO I · ORIGEM ------------------------ */}
         <SceneOriginLine />
         <SceneHero />
@@ -147,19 +138,19 @@ export default function Home() {
 
         <StickyBuyBar produto={produto} />
 
-        {/* Sem variante não há evento de produto para mandar — o Analytics
+        {/* Sem catálogo não há evento de produto para mandar — o Analytics
             reclama de variantId vazio e o dado sairia sujo. */}
-        {produto.variantId ? (
+        {produto.temCatalogo ? (
           <Analytics.ProductView
             data={{
               products: [
                 {
-                  id: produto.id ?? PRODUTO_HANDLE,
+                  id: produto.id,
                   title: produto.title,
                   price: produto.preco?.amount ?? '0',
                   vendor: CANON.fornecedor,
-                  variantId: produto.variantId,
-                  variantTitle: CANON.produto,
+                  variantId: produto.variantes[0]?.id ?? '',
+                  variantTitle: produto.variantes[0]?.title ?? CANON.produto,
                   quantity: 1,
                 },
               ],
@@ -171,6 +162,13 @@ export default function Home() {
   );
 }
 
+/**
+ * Todas as variantes, não a primeira.
+ *
+ * A escolha de modelagem, tamanho e personalização precisa resolver para uma
+ * variante real com preço e estoque próprios — com uma variante só na mão, a
+ * interface teria de inventar o preço das outras.
+ */
 const PRODUTO_QUERY = `#graphql
   query MantoProduto(
     $handle: String!
@@ -181,42 +179,27 @@ const PRODUTO_QUERY = `#graphql
       id
       title
       handle
+      description
       availableForSale
+      options {
+        name
+        optionValues { name }
+      }
+      featuredImage { url altText width height }
       priceRange {
         minVariantPrice { amount currencyCode }
       }
-      variants(first: 1) {
+      variants(first: 100) {
         nodes {
           id
           title
           availableForSale
+          sku
           price { amount currencyCode }
           compareAtPrice { amount currencyCode }
           selectedOptions { name value }
           image { url altText width height }
           product { title handle }
-        }
-      }
-    }
-  }
-`;
-
-const PRIMEIRA_VARIANTE_QUERY = `#graphql
-  query PrimeiraVariante($country: CountryCode, $language: LanguageCode)
-  @inContext(country: $country, language: $language) {
-    products(first: 1) {
-      nodes {
-        id
-        variants(first: 1) {
-          nodes {
-            id
-            title
-            availableForSale
-            price { amount currencyCode }
-            selectedOptions { name value }
-            image { url altText width height }
-            product { title handle }
-          }
         }
       }
     }
