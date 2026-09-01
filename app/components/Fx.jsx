@@ -140,8 +140,11 @@ export function Faixa({itens, inverso = false, repeticoes = 3}) {
   return (
     <div className={`faixa${inverso ? ' inverso' : ''}`} aria-hidden="true">
       <div className="faixa-trilho">
+        {/* A trilha é a mesma lista repetida de propósito, então índice é a
+            única chave estável possível — e o bloco é decorativo. */}
         {trilha.map((texto, i) => (
-          <span key={i}>{texto}</span>
+          // eslint-disable-next-line react/no-array-index-key
+          <span key={`${texto}-${i}`}>{texto}</span>
         ))}
       </div>
     </div>

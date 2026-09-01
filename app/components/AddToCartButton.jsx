@@ -25,8 +25,11 @@ export function AddToCartButton({
             type="hidden"
             value={JSON.stringify(analytics)}
           />
+          {/* `btn` traz o botão para o sistema visual da campanha; `add`
+              continua marcando o papel dele para quem estiliza por função. */}
           <button
             type="submit"
+            className="btn add"
             onClick={onClick}
             disabled={disabled ?? fetcher.state !== 'idle'}
           >

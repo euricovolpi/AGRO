@@ -11,6 +11,8 @@ import {
 } from 'react-router';
 import resetStyles from '~/styles/reset.css?url';
 import agroStyles from '~/styles/agro.css?url';
+import campaignMotionStyles from '~/styles/campaign-motion.css?url';
+import campaignStyles from '~/styles/campaign.css?url';
 import mantoStyles from '~/styles/manto.css?url';
 import archivoNarrow from '@fontsource/archivo-narrow/index.css?url';
 import archivoNarrow700 from '@fontsource/archivo-narrow/700.css?url';
@@ -18,6 +20,19 @@ import gelasio from '@fontsource/gelasio/index.css?url';
 import gelasioItalic from '@fontsource/gelasio/400-italic.css?url';
 import {PageLayout} from '~/components/PageLayout';
 import {Grao} from '~/components/Fx';
+
+/**
+ * Roda antes da primeira pintura. Três decisões que não podem esperar a
+ * hidratação, senão viram flash na tela:
+ *
+ * 1. `motion-ready` libera os estados iniciais escondidos do CSS. Sem JS a
+ *    classe nunca entra e todo o conteúdo nasce — e permanece — visível.
+ * 2. `reduce-motion` desliga esses mesmos estados para quem pediu menos
+ *    movimento.
+ * 3. `intro-vista` mata o prólogo em visita repetida ou entrada por hash,
+ *    antes de ele chegar a aparecer.
+ */
+const BOOT_MOTION = `(function(){try{var d=document.documentElement;d.classList.add('motion-ready');if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('reduce-motion');}if(sessionStorage.getItem('agro-intro')==='1'||window.location.hash){d.classList.add('intro-vista');}}catch(e){}})();`;
 
 /**
  * Evita refetch das queries de root em navegação interna.
@@ -34,8 +49,9 @@ export function links() {
     {rel: 'preconnect', href: 'https://cdn.shopify.com'},
     {rel: 'preconnect', href: 'https://shop.app'},
     {rel: 'icon', type: 'image/webp', href: '/manto/escudo.webp'},
-    // O manto do hero é o LCP: pré-carregar tira ~300ms da primeira pintura.
-    {rel: 'preload', as: 'image', href: '/manto/manto-frente.webp'},
+    // Único asset com prioridade alta: o personagem do hero é o LCP da nova
+    // composição. A camisa frontal só aparece no capítulo 06.
+    {rel: 'preload', as: 'image', href: '/manto/produtor.webp'},
   ];
 }
 
@@ -71,7 +87,9 @@ export function Layout({children}) {
   const nonce = useNonce();
 
   return (
-    <html lang="pt-BR">
+    // O script de boot marca classes no <html> antes da hidratação; sem
+    // suppress o React acusa "extra attributes from the server".
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta
@@ -85,9 +103,18 @@ export function Layout({children}) {
         <link rel="stylesheet" href={gelasio} />
         <link rel="stylesheet" href={gelasioItalic} />
         <link rel="stylesheet" href={agroStyles} />
+        <link rel="stylesheet" href={campaignMotionStyles} />
+        <link rel="stylesheet" href={campaignStyles} />
         <link rel="stylesheet" href={mantoStyles} />
         <Meta />
         <Links />
+        {/* O nonce só existe no HTML servido; sem suppress o React acusa
+            divergência de hidratação num script que nem re-executa. */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{__html: BOOT_MOTION}}
+        />
       </head>
       <body>
         <Grao />

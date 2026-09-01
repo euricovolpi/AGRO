@@ -1,0 +1,110 @@
+/* =========================================================================
+   MOTION — primitivas e portões
+   Regra da casa: o conteúdo nasce visível. Estado inicial escondido só existe
+   sob `.motion-ready:not(.reduce-motion)`, e essa classe entra no <html> por
+   script inline antes da primeira pintura. Sem JS, nada aqui se aplica.
+   ========================================================================= */
+
+:root {
+  --motion-fast: 420ms;
+  --motion-base: 760ms;
+  --motion-slow: 1100ms;
+  --motion-cinema: 1600ms;
+  --ease-agro: cubic-bezier(0.16, 0.84, 0.24, 1);
+  --ease-agro-in: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-linear: linear;
+}
+
+/* ---------- Máscara de linha ---------- */
+/* `block` é obrigatório: várias cenas usam <span class="mask"> como linha de
+   um título em grid, e um pai inline com filho block colapsa o recorte. */
+.mask {
+  display: block;
+  margin: 0;
+}
+.mask-linha {
+  display: block;
+  overflow: hidden;
+  /* O recorte precisa de folga: descendente de "g"/"ç" some com overflow
+     colado na caixa de texto. */
+  padding-block: 0.06em;
+  margin-block: -0.06em;
+}
+.mask-interna {
+  display: block;
+  will-change: auto;
+}
+.motion-ready:not(.reduce-motion) [data-mask] .mask-interna,
+.motion-ready:not(.reduce-motion) .mask .mask-interna {
+  transform: translateY(108%);
+}
+
+/* ---------- Recorte de bloco ---------- */
+.motion-ready:not(.reduce-motion) [data-clip='baixo'] {
+  clip-path: inset(100% 0 0 0);
+}
+.motion-ready:not(.reduce-motion) [data-clip='cima'] {
+  clip-path: inset(0 0 100% 0);
+}
+.motion-ready:not(.reduce-motion) [data-clip='esquerda'] {
+  clip-path: inset(0 100% 0 0);
+}
+.motion-ready:not(.reduce-motion) [data-clip='direita'] {
+  clip-path: inset(0 0 0 100%);
+}
+
+/* ---------- Split por palavra ---------- */
+.split-palavra {
+  display: inline-block;
+  overflow: hidden;
+  padding-block: 0.06em;
+  margin-block: -0.06em;
+}
+.split-interna {
+  display: inline-block;
+}
+.motion-ready:not(.reduce-motion) [data-split] .split-interna {
+  transform: translateY(105%);
+}
+
+/* ---------- Entrada simples ---------- */
+.motion-ready:not(.reduce-motion) [data-surge] {
+  opacity: 0;
+  transform: translateY(22px);
+}
+
+/* ---------- Cenas pinadas ---------- */
+.cena {
+  position: relative;
+}
+.cena-palco {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+/* Sem JS ou com movimento reduzido, cena pinada vira seção normal: a altura
+   extra do scroll não existe e o palco deixa de precisar de tela cheia. */
+html:not(.motion-ready) .cena-palco,
+.reduce-motion .cena-palco {
+  height: auto;
+  min-height: 60svh;
+  overflow: visible;
+  padding-block: clamp(3rem, 8vw, 6rem);
+}
+
+/* ---------- Preferência de movimento reduzido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

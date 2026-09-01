@@ -86,7 +86,20 @@ h4 {
 }
 
 /* Régua tipográfica. O display sobe muito porque a marca é condensada e
-   ganha presença por tamanho, não por peso. */
+   ganha presença por tamanho, não por peso.
+   A família vem junto: na campanha, várias frases de display são <p> — a
+   segunda linha de um par, um selo — e herdariam a serifada do body. */
+.d1,
+.d2,
+.d3,
+.d4 {
+  font-family: var(--display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.9;
+  color: var(--papel);
+}
 .d1 {
   font-size: clamp(3.4rem, 12.5vw, 11rem);
 }

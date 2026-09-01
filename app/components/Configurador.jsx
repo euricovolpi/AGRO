@@ -1,8 +1,10 @@
-import {useMemo, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {AddToCartButton} from '~/components/AddToCartButton';
 import {useAside} from '~/components/Aside';
 import {formatPreco, formatParcela, parcelasIdeais} from '~/lib/money';
 import {MODELAGENS, TAMANHOS, PERSONALIZACAO} from '~/lib/manto';
+import {CTA} from '~/lib/campaign-copy';
+import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
 
 /**
  * O bloco de compra: modelagem, tamanho, personalização e preço, com o
@@ -16,12 +18,25 @@ import {MODELAGENS, TAMANHOS, PERSONALIZACAO} from '~/lib/manto';
  */
 export function Configurador({produto}) {
   const {open} = useAside();
+  const {evento} = useCampaignAnalytics();
   const [modelagem, setModelagem] = useState(MODELAGENS[0].id);
   const [tamanho, setTamanho] = useState('G');
   const [nome, setNome] = useState('');
   const [numero, setNumero] = useState('');
+  const comecou = useRef(false);
+  const personalizouAntes = useRef(false);
+
+  /** Primeira mexida no configurador, uma vez por pageview. */
+  function marcarInicio() {
+    if (comecou.current) return;
+    comecou.current = true;
+    evento('campaign_configurator_start');
+  }
 
   const personalizado = Boolean(nome.trim() || numero.trim());
+  if (personalizado && !personalizouAntes.current) {
+    personalizouAntes.current = true;
+  }
   const modelo = MODELAGENS.find((m) => m.id === modelagem) ?? MODELAGENS[0];
 
   const preco = useMemo(() => {
@@ -61,10 +76,12 @@ export function Configurador({produto}) {
           loading="lazy"
           decoding="async"
         />
-        <span className="mn-preview-nome">
+        {/* `key` força a remontagem a cada troca: o nome reabre o tracking
+            e o número faz um crossfade curto, sem flip de cassino. */}
+        <span className="mn-preview-nome" key={`n-${nome}`}>
           {nome.trim() ? nome.trim().toUpperCase() : 'SEU NOME'}
         </span>
-        <span className="mn-preview-numero">
+        <span className="mn-preview-numero" key={`x-${numero}`}>
           {numero.trim() ? numero.trim() : '10'}
         </span>
       </div>
@@ -92,7 +109,10 @@ export function Configurador({produto}) {
                 type="button"
                 className="mn-opcao larga"
                 aria-pressed={m.id === modelagem}
-                onClick={() => setModelagem(m.id)}
+                onClick={() => {
+                  marcarInicio();
+                  setModelagem(m.id);
+                }}
               >
                 {m.nome}
                 <small>
@@ -120,7 +140,11 @@ export function Configurador({produto}) {
                 type="button"
                 className="mn-opcao"
                 aria-pressed={t.id === tamanho}
-                onClick={() => setTamanho(t.id)}
+                onClick={() => {
+                  marcarInicio();
+                  setTamanho(t.id);
+                  evento('campaign_size_select', {size: t.id});
+                }}
               >
                 {t.id}
               </button>
@@ -168,7 +192,16 @@ export function Configurador({produto}) {
               maxLength={PERSONALIZACAO.maxNome}
               placeholder="Nome nas costas"
               aria-label="Nome nas costas"
-              onChange={(e) => setNome(e.target.value.replace(/[^\p{L} .'-]/gu, ''))}
+              onChange={(e) => {
+                marcarInicio();
+                const limpo = e.target.value.replace(/[^\p{L} .'-]/gu, '');
+                // O evento marca que a personalização foi ligada; o nome
+                // digitado nunca sai daqui.
+                if (limpo && !personalizouAntes.current) {
+                  evento('campaign_personalization_enable');
+                }
+                setNome(limpo);
+              }}
             />
             <input
               type="text"
@@ -177,7 +210,10 @@ export function Configurador({produto}) {
               maxLength={2}
               placeholder="Nº"
               aria-label="Número nas costas"
-              onChange={(e) => setNumero(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => {
+                marcarInicio();
+                setNumero(e.target.value.replace(/\D/g, ''));
+              }}
             />
           </div>
         </div>
@@ -193,10 +229,13 @@ export function Configurador({produto}) {
                   attributes: atributos,
                 },
               ]}
-              onClick={() => open('cart')}
+              onClick={() => {
+                evento('campaign_cta_click', {placement: 'configurador'});
+                open('cart');
+              }}
               analytics={{products: [{productGid: produto.id, quantity: 1}]}}
             >
-              Colocar na sacola
+              {CTA.principal}
             </AddToCartButton>
           ) : (
             <button type="button" className="btn" disabled>
@@ -207,6 +246,12 @@ export function Configurador({produto}) {
             Ver o manto de perto
           </a>
         </div>
+
+        <p className="vis-oculto" role="status" aria-live="polite">
+          {`${modelo.nome}, tamanho ${tamanho}${
+            personalizado ? ', com personalização' : ''
+          }. ${formatPreco(preco)}.`}
+        </p>
 
         <p className="mn-nota">
           {personalizado

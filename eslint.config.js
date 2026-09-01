@@ -32,6 +32,9 @@ export default [
       '**/*.generated.d.ts',
       '**/.react-router/',
       '**/packages/hydrogen/dist/',
+      // Projeto é JavaScript com jsconfig; o parser de TS pede um
+      // tsconfig.json que não existe aqui.
+      '**/*.d.ts',
     ],
   },
   ...fixupConfigRules(
