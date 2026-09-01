@@ -22,6 +22,9 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
+    // O grão sobre a página é um SVG inline em data: URI. Sem isto o CSP
+    // bloqueia a textura e o fundo preto chapa.
+    imgSrc: ["'self'", 'data:', 'https://cdn.shopify.com'],
   });
 
   const body = await renderToReadableStream(

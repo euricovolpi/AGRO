@@ -52,7 +52,7 @@ export function Aside({children, heading, type}) {
             &times;
           </button>
         </header>
-        <main>{children}</main>
+        <div className="aside-corpo">{children}</div>
       </aside>
     </div>
   );

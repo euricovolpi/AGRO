@@ -1,180 +1,137 @@
+import {Suspense} from 'react';
 import {Await, Link} from 'react-router';
-import {Suspense, useId} from 'react';
 import {Aside} from '~/components/Aside';
-import {Footer} from '~/components/Footer';
-import {Header, HeaderMenu} from '~/components/Header';
 import {CartMain} from '~/components/CartMain';
-import {
-  SEARCH_ENDPOINT,
-  SearchFormPredictive,
-} from '~/components/SearchFormPredictive';
-import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
+import {CLUBE} from '~/lib/manto';
 
 /**
- * @param {PageLayoutProps}
+ * @param {{
+ *   cart?: Promise<any>;
+ *   children?: React.ReactNode;
+ * }}
  */
-export function PageLayout({
-  cart,
-  children = null,
-  footer,
-  header,
-  isLoggedIn,
-  publicStoreDomain,
-}) {
+export function PageLayout({cart, children}) {
   return (
     <Aside.Provider>
-      <CartAside cart={cart} />
-      <SearchAside />
-      <MobileMenuAside header={header} publicStoreDomain={publicStoreDomain} />
-      {header && (
-        <Header
-          header={header}
-          cart={cart}
-          isLoggedIn={isLoggedIn}
-          publicStoreDomain={publicStoreDomain}
-        />
-      )}
-      <main>{children}</main>
-      <Footer
-        footer={footer}
-        header={header}
-        publicStoreDomain={publicStoreDomain}
-      />
+      <a className="pula" href="#conteudo">
+        Pular para o conteúdo
+      </a>
+      <SacolaAside cart={cart} />
+      <Cabecalho cart={cart} />
+      <main id="conteudo">{children}</main>
+      <Rodape />
     </Aside.Provider>
   );
 }
 
-/**
- * @param {{cart: PageLayoutProps['cart']}}
- */
-function CartAside({cart}) {
+/** @param {{cart?: Promise<any>}} */
+function Cabecalho({cart}) {
   return (
-    <Aside type="cart" heading="CART">
-      <Suspense fallback={<p>Loading cart ...</p>}>
-        <Await resolve={cart}>
-          {(cart) => {
-            return <CartMain cart={cart} layout="aside" />;
-          }}
+    <header className="cabecalho">
+      <Link to="/" className="marca" prefetch="intent">
+        <img
+          src="/manto/escudo.webp"
+          width="667"
+          height="900"
+          alt=""
+          aria-hidden="true"
+        />
+        <span>
+          Agro Esporte Clube
+          <br />
+          Loja Oficial
+        </span>
+      </Link>
+
+      <nav aria-label="Seções da página">
+        <a href="#manifesto">O manto</a>
+        <a href="#detalhes">Detalhes</a>
+        <a href="#comprar">Comprar</a>
+        <a href="#calendario">Temporada {CLUBE.temporada}</a>
+      </nav>
+
+      <BotaoSacola cart={cart} />
+    </header>
+  );
+}
+
+/** @param {{cart?: Promise<any>}} */
+function BotaoSacola({cart}) {
+  return (
+    <Suspense fallback={<Gatilho quantidade={null} />}>
+      <Await resolve={cart} errorElement={<Gatilho quantidade={null} />}>
+        {(resolvido) => <Gatilho quantidade={resolvido?.totalQuantity ?? 0} />}
+      </Await>
+    </Suspense>
+  );
+}
+
+/** @param {{quantidade: number | null}} */
+function Gatilho({quantidade}) {
+  return (
+    <a className="btn fantasma" href="#comprar">
+      Sacola
+      {quantidade ? <span className="ouro"> ({quantidade})</span> : null}
+    </a>
+  );
+}
+
+/** @param {{cart?: Promise<any>}} */
+function SacolaAside({cart}) {
+  return (
+    <Aside type="cart" heading="Sacola">
+      <Suspense fallback={<p>Carregando…</p>}>
+        <Await resolve={cart} errorElement={<p>Não foi possível abrir a sacola.</p>}>
+          {(resolvido) => <CartMain cart={resolvido} layout="aside" />}
         </Await>
       </Suspense>
     </Aside>
   );
 }
 
-function SearchAside() {
-  const queriesDatalistId = useId();
+function Rodape() {
   return (
-    <Aside type="search" heading="SEARCH">
-      <div className="predictive-search">
-        <br />
-        <SearchFormPredictive>
-          {({fetchResults, goToSearch, inputRef}) => (
-            <>
-              <input
-                name="q"
-                onChange={fetchResults}
-                onFocus={fetchResults}
-                placeholder="Search"
-                ref={inputRef}
-                type="search"
-                list={queriesDatalistId}
-              />
-              &nbsp;
-              <button onClick={goToSearch}>Search</button>
-            </>
-          )}
-        </SearchFormPredictive>
+    <footer className="rodape">
+      <div className="env">
+        <div className="rodape-topo">
+          <div>
+            <img
+              className="rodape-escudo"
+              src="/manto/escudo.webp"
+              width="667"
+              height="900"
+              alt="Escudo do Agro Esporte Clube"
+            />
+            <h2 className="d3">
+              O campo agora
+              <br />
+              <span className="ouro">tem camisa.</span>
+            </h2>
+          </div>
+          <div>
+            <p style={{maxWidth: '34ch'}}>
+              Loja oficial do {CLUBE.nome}. {CLUBE.praca}. Primeira temporada
+              oficial em {CLUBE.temporada}.
+            </p>
+            <div className="rodape-links" style={{marginTop: '1.6rem'}}>
+              <a href="#comprar">Comprar o manto</a>
+              <a href="#detalhes">Detalhes</a>
+              <a href="#faq">Dúvidas</a>
+              <span>Fornecedor {CLUBE.fornecedor}</span>
+            </div>
+          </div>
+        </div>
 
-        <SearchResultsPredictive>
-          {({items, total, term, state, closeSearch}) => {
-            const {articles, collections, pages, products, queries} = items;
-
-            if (state === 'loading' && term.current) {
-              return <div>Loading...</div>;
-            }
-
-            if (!total) {
-              return <SearchResultsPredictive.Empty term={term} />;
-            }
-
-            return (
-              <>
-                <SearchResultsPredictive.Queries
-                  queries={queries}
-                  queriesDatalistId={queriesDatalistId}
-                />
-                <SearchResultsPredictive.Products
-                  products={products}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Collections
-                  collections={collections}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Pages
-                  pages={pages}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Articles
-                  articles={articles}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                {term.current && total ? (
-                  <Link
-                    onClick={closeSearch}
-                    to={`${SEARCH_ENDPOINT}?q=${term.current}`}
-                  >
-                    <p>
-                      View all results for <q>{term.current}</q>
-                      &nbsp; →
-                    </p>
-                  </Link>
-                ) : null}
-              </>
-            );
-          }}
-        </SearchResultsPredictive>
+        <div className="rodape-legal">
+          <span>
+            © {CLUBE.fundacao} {CLUBE.nome}. Todos os direitos reservados.
+          </span>
+          <span>
+            Imagens conceituais de produto. Uniforme sujeito a ajustes de
+            confecção e ao enxoval técnico da temporada.
+          </span>
+        </div>
       </div>
-    </Aside>
+    </footer>
   );
 }
-
-/**
- * @param {{
- *   header: PageLayoutProps['header'];
- *   publicStoreDomain: PageLayoutProps['publicStoreDomain'];
- * }}
- */
-function MobileMenuAside({header, publicStoreDomain}) {
-  return (
-    header.menu &&
-    header.shop.primaryDomain?.url && (
-      <Aside type="mobile" heading="MENU">
-        <HeaderMenu
-          menu={header.menu}
-          viewport="mobile"
-          primaryDomainUrl={header.shop.primaryDomain.url}
-          publicStoreDomain={publicStoreDomain}
-        />
-      </Aside>
-    )
-  );
-}
-
-/**
- * @typedef {Object} PageLayoutProps
- * @property {Promise<CartApiQueryFragment|null>} cart
- * @property {Promise<FooterQuery|null>} footer
- * @property {HeaderQuery} header
- * @property {Promise<boolean>} isLoggedIn
- * @property {string} publicStoreDomain
- * @property {React.ReactNode} [children]
- */
-
-/** @typedef {import('storefrontapi.generated').CartApiQueryFragment} CartApiQueryFragment */
-/** @typedef {import('storefrontapi.generated').FooterQuery} FooterQuery */
-/** @typedef {import('storefrontapi.generated').HeaderQuery} HeaderQuery */

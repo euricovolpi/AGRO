@@ -1,50 +1,41 @@
-# Hydrogen template: Skeleton
+# AGRO
 
-Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dovetail with [Remix](https://remix.run/), Shopify’s full stack web framework. This template contains a **minimal setup** of components, queries and tooling to get started with Hydrogen.
+Projeto Agro Esporte Clube — Catalão, Goiás. Temporada 2027.
 
-[Check out Hydrogen docs](https://shopify.dev/custom-storefronts/hydrogen)
-[Get familiar with Remix](https://remix.run/docs/en/v1)
+## O que tem aqui
 
-## What's included
+| Pasta | O que é |
+| --- | --- |
+| `agro-storefront/` | Loja oficial headless (Shopify Hydrogen). Landing de venda do Manto I 2027. |
+| `Agro Esporte Clube - Layout Midia Kit.fig.zip` | Mídia kit 2027 em Figma (70 MB, fora do versionamento). |
 
-- Remix
-- Hydrogen
-- Oxygen
-- Vite
-- Shopify CLI
-- ESLint
-- Prettier
-- GraphQL generator
-- TypeScript and JavaScript flavors
-- Minimal setup of components and routes
+## agro-storefront
 
-## Getting started
-
-**Requirements:**
-
-- Node.js version 18.0.0 or higher
+Landing page de venda da camisa oficial, no mesmo stack e nas mesmas
+convenções do `SITE CBV 2.0/cbv-storefront`. Ver
+[`agro-storefront/PRODUCT.md`](agro-storefront/PRODUCT.md) para o
+registro de marca, sistema visual e regras de motion.
 
 ```bash
-npm create @shopify/hydrogen@latest
+cd agro-storefront && npm install && npm run dev
 ```
 
-## Building for production
+Sobe em `http://localhost:3000` (ou `--port 3200`, que é o que
+`.claude/launch.json` usa). Sem loja conectada, roda contra `mock.shop`:
+a página monta inteira com o preço de referência de `app/lib/manto.js` e
+o fluxo de sacola segue testável.
+
+Para conectar a loja real:
 
 ```bash
-npm run build
+cd agro-storefront && npx shopify hydrogen link
 ```
 
-## Local development
+Depois disso, `PRODUTO_HANDLE` (`manto-i-2027`) passa a mandar em preço,
+estoque e variantes.
 
-```bash
-npm run dev
-```
+## Assets
 
-## Setup for using Customer Account API (`/account` section)
-
-Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-with-the-customer-account-api/hydrogen#step-1-set-up-a-public-domain-for-local-development>
-
-## Assets de design
-
-Arquivos pesados (`*.fig.zip`) ficam fora do versionamento — ver `.gitignore`.
-Origem: `Agro Esporte Clube - Layout Midia Kit.fig.zip` (70 MB, local).
+Os renders do manto em `agro-storefront/public/manto/` foram extraídos do
+`.fig` do mídia kit e reenquadrados para web (WebP). O `.fig.zip` fica
+fora do git — ver `.gitignore`.

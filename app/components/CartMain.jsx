@@ -90,15 +90,17 @@ export function CartMain({layout, cart: originalCart}) {
 function CartEmpty({hidden = false}) {
   const {close} = useAside();
   return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
+    <div className="cart-empty" hidden={hidden}>
+      <h4 className="d4">
+        Sua sacola
+        <br />
+        está vazia.
+      </h4>
+      <p style={{margin: '1rem 0 1.5rem'}}>
+        Uma camisa. Uma temporada. Comece pelo Manto I.
       </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
+      <Link className="btn" to="/#comprar" onClick={close} prefetch="viewport">
+        Montar o meu manto
       </Link>
     </div>
   );

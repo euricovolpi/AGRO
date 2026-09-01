@@ -26,5 +26,5 @@ Thumbs.db
 # Assets pesados (>50MB) — manter fora do git, ver README
 *.fig.zip
 
-# Projeto Hydrogen aninhado, origem indefinida — decidir antes de versionar
+# Rascunho do storefront: a LP foi movida para a raiz. Pasta pode ser apagada.
 /agro-storefront/
