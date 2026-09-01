@@ -1,6 +1,8 @@
-import {Suspense, useEffect, useState} from 'react';
+import {Suspense, useEffect, useRef, useState} from 'react';
 import {Await, Link} from 'react-router';
 import {useAside} from '~/components/Aside';
+import {useCampaignMotion} from '~/components/campaign/CampaignMotionProvider';
+import {MenuCampanha} from '~/components/campaign/MenuCampanha';
 import {CANON, CTA} from '~/lib/campaign-copy';
 
 const LINKS = [
@@ -21,33 +23,25 @@ const LINKS = [
  * @param {{cart?: Promise<any>}}
  */
 export function CampaignHeader({cart}) {
-  const [colado, setColado] = useState(false);
+  const {assinarScroll} = useCampaignMotion();
   const [menuAberto, setMenuAberto] = useState(false);
+  const headerRef = useRef(null);
+  const gatilhoMenuRef = useRef(null);
 
-  useEffect(() => {
-    const aoRolar = () => setColado(scrollY > 24);
-    addEventListener('scroll', aoRolar, {passive: true});
-    aoRolar();
-    return () => removeEventListener('scroll', aoRolar);
-  }, []);
-
-  // Trava a rolagem enquanto o menu cobre a tela, senão o fundo desliza atrás
-  // do overlay no iOS.
-  useEffect(() => {
-    if (!menuAberto) return undefined;
-    const anterior = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const aoTeclar = (e) => e.key === 'Escape' && setMenuAberto(false);
-    addEventListener('keydown', aoTeclar);
-    return () => {
-      document.body.style.overflow = anterior;
-      removeEventListener('keydown', aoTeclar);
-    };
-  }, [menuAberto]);
+  // A classe entra direto no DOM, sem estado React: o header muda de fundo uma
+  // vez em toda a página, e re-renderizar a árvore a cada evento de rolagem
+  // para decidir isso é custo puro.
+  useEffect(
+    () =>
+      assinarScroll((y) => {
+        headerRef.current?.classList.toggle('colado', y > 24);
+      }),
+    [assinarScroll],
+  );
 
   return (
     <>
-      <header className={`cabecalho${colado ? ' colado' : ''}`}>
+      <header className="cabecalho" ref={headerRef}>
         <Link to="/" className="marca" prefetch="intent">
           <img
             src="/manto/escudo.webp"
@@ -60,7 +54,7 @@ export function CampaignHeader({cart}) {
         </Link>
 
         <p className="cabecalho-centro" aria-hidden="true">
-          {CANON.campanhaCurta}
+          {CANON.produto}
         </p>
 
         <nav className="cabecalho-nav" aria-label="Seções da campanha">
@@ -81,33 +75,20 @@ export function CampaignHeader({cart}) {
             className="cabecalho-menu"
             aria-expanded={menuAberto}
             aria-controls="menu-campanha"
-            onClick={() => setMenuAberto((v) => !v)}
+            ref={gatilhoMenuRef}
+            onClick={() => setMenuAberto(true)}
           >
-            {menuAberto ? 'Fechar' : 'Menu'}
+            Menu
           </button>
         </div>
       </header>
 
-      <div
-        id="menu-campanha"
-        className={`menu-overlay${menuAberto ? ' aberto' : ''}`}
-        hidden={!menuAberto}
-      >
-        <nav aria-label="Navegação principal">
-          {LINKS.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setMenuAberto(false)}>
-              {l.rotulo}
-            </a>
-          ))}
-        </nav>
-        <p className="menu-lockup">
-          {CANON.clube}
-          <br />
-          {CANON.praca}
-          <br />
-          Fundado em {CANON.fundacao}
-        </p>
-      </div>
+      <MenuCampanha
+        aberto={menuAberto}
+        aoFechar={() => setMenuAberto(false)}
+        links={LINKS}
+        gatilhoRef={gatilhoMenuRef}
+      />
     </>
   );
 }
