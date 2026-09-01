@@ -44,9 +44,9 @@ export function CampaignHeader({cart}) {
       <header className="cabecalho" ref={headerRef}>
         <Link to="/" className="marca" prefetch="intent">
           <img
-            src="/manto/escudo.webp"
-            width="667"
-            height="900"
+            src="/manto/escudo-icone.webp"
+            width="89"
+            height="120"
             alt=""
             aria-hidden="true"
           />

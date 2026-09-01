@@ -48,12 +48,12 @@ const ENSAIO = [
  */
 export function SceneStillEarly() {
   const raiz = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
 
   useGSAP(
     () => {
-      if (!ativo) return;
+      if (!ativo || !pronto) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -123,7 +123,7 @@ export function SceneStillEarly() {
         delete document.documentElement.dataset.silencio;
       };
     },
-    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto], revertOnUpdate: true},
   );
 
   return (

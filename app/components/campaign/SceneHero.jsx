@@ -15,12 +15,12 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneHero() {
   const raiz = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
 
   useGSAP(
     () => {
-      if (!ativo) return;
+      if (!ativo || !pronto) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -63,23 +63,22 @@ export function SceneHero() {
         ScrollTrigger.getById(CENAS.hero)?.kill();
       };
     },
-    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto], revertOnUpdate: true},
   );
 
   return (
     <section className="cena cena-hero" ref={raiz} aria-labelledby="hero-titulo">
       <div className="cena-palco" data-palco="">
         <figure className="hero-figura" data-figura="">
-          {/* `fetchpriority` vai por spread: o React 18 só aceita o atributo em
-              minúsculas e a regra de lint só aceita camelCase. */}
+          {/* Está na segunda tela, não na primeira: carrega por proximidade
+              como qualquer outra imagem do documento. */}
           <img
             src="/manto/produtor.webp"
             width="1045"
             height="1400"
             alt="Produtor rural de costas, vestindo o manto do Agro Esporte Clube diante da lavoura"
-            data-lcp=""
+            loading="lazy"
             decoding="async"
-            {...{fetchpriority: 'high'}}
           />
         </figure>
         <div className="hero-borda-luz" data-borda-luz="" aria-hidden="true" />

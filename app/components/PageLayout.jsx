@@ -51,9 +51,10 @@ function Rodape() {
         <div>
           <img
             className="rodape-escudo"
-            src="/manto/escudo.webp"
-            width="667"
-            height="900"
+            src="/manto/escudo-icone.webp"
+            width="89"
+            height="120"
+            loading="lazy"
             alt={`Escudo do ${CANON.clube}`}
           />
         </div>

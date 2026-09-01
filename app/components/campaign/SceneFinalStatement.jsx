@@ -17,13 +17,13 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneFinalStatement({produto}) {
   const raiz = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista, publicarUmaVez} = useCampaignAnalytics();
   const vezes = parcelasIdeais(produto?.preco);
 
   useGSAP(
     () => {
-      if (!ativo) return;
+      if (!ativo || !pronto) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -58,7 +58,7 @@ export function SceneFinalStatement({produto}) {
         ScrollTrigger.getById(CENAS.final)?.kill();
       };
     },
-    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto], revertOnUpdate: true},
   );
 
   return (

@@ -18,7 +18,7 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneBirthCertificate() {
   const raiz = useRef(null);
-  const {ativo, assinarScroll} = useCampaignMotion();
+  const {ativo, pronto, assinarScroll} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
 
   useGSAP(
@@ -78,7 +78,7 @@ export function SceneBirthCertificate() {
         limparTema();
       };
     },
-    {scope: raiz, dependencies: [ativo, assinarScroll], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto, assinarScroll], revertOnUpdate: true},
   );
 
   return (

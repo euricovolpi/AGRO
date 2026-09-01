@@ -19,7 +19,7 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneFieldMorph() {
   const raiz = useRef(null);
-  const {ativo, faixa} = useCampaignMotion();
+  const {ativo, pronto, faixa} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
   const [vertical, setVertical] = useState(false);
 
@@ -101,7 +101,7 @@ export function SceneFieldMorph() {
         ScrollTrigger.getById(CENAS.campo)?.kill();
       };
     },
-    {scope: raiz, dependencies: [ativo, geo, faixa], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto, geo, faixa], revertOnUpdate: true},
   );
 
   return (

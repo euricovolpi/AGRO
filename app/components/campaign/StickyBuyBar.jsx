@@ -68,6 +68,8 @@ export function StickyBuyBar({produto}) {
           height="1436"
           alt=""
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
         />
         <div>
           <strong>{CANON.produto}</strong>

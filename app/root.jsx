@@ -45,7 +45,7 @@ import {Grao} from '~/components/Fx';
  * Qualquer exceção aqui também termina em fail-open: sem as classes, nada no
  * CSS esconde coisa alguma.
  */
-const BOOT_MOTION = `(function(){var d=document.documentElement;try{d.classList.add('motion-ready','motion-booting');if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('reduce-motion');}if(sessionStorage.getItem('agro-intro')==='1'||window.location.hash){d.classList.add('intro-vista');}else if(!d.classList.contains('reduce-motion')){d.classList.add('intro-ativa');}var t=setTimeout(function(){d.classList.remove('motion-ready','motion-booting');d.classList.add('motion-failed');},2500);window.__agroBootOk=function(){clearTimeout(t);d.classList.remove('motion-booting');};}catch(e){d.classList.remove('motion-ready','motion-booting');d.classList.add('motion-failed');}})();`;
+const BOOT_MOTION = `(function(){var d=document.documentElement;try{d.classList.add('motion-ready','motion-booting');if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('reduce-motion');}if(sessionStorage.getItem('agro-intro')==='1'||window.location.hash){d.classList.add('intro-vista');}else if(!d.classList.contains('reduce-motion')){d.classList.add('intro-ativa');}var t=setTimeout(function(){d.classList.remove('motion-ready','motion-booting','intro-ativa');d.classList.add('motion-failed','intro-vista');},2500);window.__agroBootOk=function(){clearTimeout(t);d.classList.remove('motion-booting');};}catch(e){d.classList.remove('motion-ready','motion-booting','intro-ativa');d.classList.add('motion-failed','intro-vista');window.__agroBootErro=String(e&&e.message||e);}})();`;
 
 /**
  * Evita refetch das queries de root em navegação interna.
@@ -61,10 +61,10 @@ export function links() {
   return [
     {rel: 'preconnect', href: 'https://cdn.shopify.com'},
     {rel: 'preconnect', href: 'https://shop.app'},
-    {rel: 'icon', type: 'image/webp', href: '/manto/escudo.webp'},
-    // Único asset com prioridade alta: o personagem do hero é o LCP da nova
-    // composição. A camisa frontal só aparece no capítulo 06.
-    {rel: 'preload', as: 'image', href: '/manto/produtor.webp'},
+    {rel: 'icon', type: 'image/webp', href: '/manto/escudo-icone.webp'},
+    // Nenhum `preload` de imagem. A primeira tela é o prólogo — gradiente,
+    // uma linha e texto —, então pré-carregar a foto do hero só antecipava
+    // 114 KB e fazia o LCP se prender a um elemento abaixo da dobra.
   ];
 }
 

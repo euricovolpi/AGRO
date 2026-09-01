@@ -27,12 +27,12 @@ const CHAVE_INTRO = 'agro-intro';
  */
 export function SceneOriginLine() {
   const raiz = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
 
   useGSAP(
     () => {
-      if (!ativo) return undefined;
+      if (!ativo || !pronto) return undefined;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -152,7 +152,7 @@ export function SceneOriginLine() {
         ScrollTrigger.getById(CENAS.origem)?.kill();
       };
     },
-    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto], revertOnUpdate: true},
   );
 
   return (

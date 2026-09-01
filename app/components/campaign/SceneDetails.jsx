@@ -17,7 +17,7 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneDetails() {
   const raiz = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
   const [indiceAtivo, setIndiceAtivo] = useState(0);
 
@@ -71,7 +71,7 @@ export function SceneDetails() {
         tweens.forEach((t) => t.scrollTrigger?.kill());
       };
     },
-    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto], revertOnUpdate: true},
   );
 
   return (

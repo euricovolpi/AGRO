@@ -63,7 +63,7 @@ const JANELAS = [
 export function SceneShirtTurntable() {
   const raiz = useRef(null);
   const canvasRef = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista, publicarUmaVez} = useCampaignAnalytics();
   const {disponivel, desenhar, redesenhar, preparar, total} = useImageSequence({
     ativo,
@@ -101,7 +101,7 @@ export function SceneShirtTurntable() {
 
   useGSAP(
     () => {
-      if (!ativo || disponivel === null) return;
+      if (!ativo || !pronto || disponivel === null) return;
 
       const estado = {p: 0};
 
@@ -163,7 +163,7 @@ export function SceneShirtTurntable() {
         ScrollTrigger.getById(CENAS.turntable)?.kill();
       };
     },
-    {scope: raiz, dependencies: [ativo, disponivel, usaSequencia, total], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto, disponivel, usaSequencia, total], revertOnUpdate: true},
   );
 
   return (

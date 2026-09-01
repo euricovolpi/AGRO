@@ -43,7 +43,14 @@ export function useCampaignMotion() {
 export function CampaignMotionProvider({children}) {
   const reduzido = useReducedMotion();
   const [pronto, setPronto] = useState(false);
-  const [falhou, setFalhou] = useState(false);
+  // Lido de forma síncrona, como a preferência de movimento: se descobrirmos
+  // a falha só no primeiro efeito, as cenas já terão criado os pins que o
+  // fail-open existe para não ter.
+  const [falhou] = useState(() =>
+    typeof document === 'undefined'
+      ? false
+      : document.documentElement.classList.contains('motion-failed'),
+  );
   const [faixa, setFaixa] = useState('desktop');
   const eventosEmitidos = useRef(criarRegistroDeEventos());
   const assinantesScroll = useRef(new Set());
@@ -51,9 +58,16 @@ export function CampaignMotionProvider({children}) {
   // Se o watchdog do boot já disparou, o CSS que esconde conteúdo foi
   // removido. Animar agora reesconderia tudo por estilo inline — exatamente o
   // que o fail-open existe para impedir.
+  //
+  // E a confirmação vai junto, na montagem: a pergunta do watchdog é "o
+  // JavaScript assumiu?", e a resposta já é sim aqui. Amarrá-la ao
+  // `ScrollTrigger.refresh()`, que espera fontes, estourava os 2,5 s em
+  // aparelho lento — e a página caía em fail-open justamente onde o movimento
+  // funcionaria.
   useEffect(() => {
-    setFalhou(document.documentElement.classList.contains('motion-failed'));
-  }, []);
+    // Em fail-open o prólogo não roda, então ninguém devolveria o header.
+    if (falhou) document.documentElement.classList.remove('intro-ativa');
+  }, [falhou]);
 
   const ativo = !reduzido && !falhou;
 
@@ -136,8 +150,6 @@ export function CampaignMotionProvider({children}) {
    * principal assentaram — senão os pins nascem calculados com a altura
    * errada e saltam quando a tipografia troca.
    *
-   * É também aqui que o boot é confirmado: a partir deste ponto o movimento
-   * assumiu, e o watchdog do documento pode ser cancelado.
    */
   useEffect(() => {
     let vivo = true;
@@ -149,19 +161,12 @@ export function CampaignMotionProvider({children}) {
         // fonte não é bloqueante para a narrativa
       }
 
-      const lcp = document.querySelector('[data-lcp]');
-      if (lcp?.decode) {
-        try {
-          await lcp.decode();
-        } catch {
-          // imagem quebrada não pode travar o motion
-        }
-      }
-
+      // Só a fonte. Esperar por uma imagem abaixo da dobra empurrava o
+      // `refresh` para depois de 5 s: os pins nasciam tarde, e a inserção dos
+      // espaçadores virava um salto de layout de 0,18 de CLS.
       if (!vivo) return;
       ScrollTrigger.refresh();
       setPronto(true);
-      window.__agroBootOk?.();
     }
 
     liberar();

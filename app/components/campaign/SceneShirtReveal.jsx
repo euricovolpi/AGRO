@@ -17,12 +17,12 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneShirtReveal() {
   const raiz = useRef(null);
-  const {ativo} = useCampaignMotion();
+  const {ativo, pronto} = useCampaignMotion();
   const {cenaVista, publicarUmaVez} = useCampaignAnalytics();
 
   useGSAP(
     () => {
-      if (!ativo) return;
+      if (!ativo || !pronto) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -72,7 +72,7 @@ export function SceneShirtReveal() {
         ScrollTrigger.getById(CENAS.reveal)?.kill();
       };
     },
-    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, pronto], revertOnUpdate: true},
   );
 
   return (
