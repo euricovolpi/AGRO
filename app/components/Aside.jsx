@@ -39,7 +39,12 @@ export function Aside({children, heading, type}) {
 
   return (
     <div
-      aria-modal
+      // Fechado, este painel continua no DOM para a transição de saída — mas
+      // não pode continuar anunciando um diálogo modal aberto, nem manter os
+      // próprios botões alcançáveis por Tab atrás da página.
+      aria-modal={expanded || undefined}
+      aria-hidden={expanded ? undefined : 'true'}
+      inert={expanded ? undefined : ''}
       className={`overlay ${expanded ? 'expanded' : ''}`}
       role="dialog"
       aria-labelledby={id}

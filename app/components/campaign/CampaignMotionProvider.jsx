@@ -11,6 +11,7 @@ import {gsap, ScrollTrigger} from '~/lib/gsap';
 import Lenis from 'lenis';
 import {useReducedMotion} from '~/hooks/useReducedMotion';
 import {faixaDe} from '~/lib/campaign-motion';
+import {criarRegistroDeEventos} from '~/lib/eventos';
 
 const MotionContext = createContext({
   pronto: false,
@@ -44,7 +45,7 @@ export function CampaignMotionProvider({children}) {
   const [pronto, setPronto] = useState(false);
   const [falhou, setFalhou] = useState(false);
   const [faixa, setFaixa] = useState('desktop');
-  const eventosEmitidos = useRef(new Set());
+  const eventosEmitidos = useRef(criarRegistroDeEventos());
   const assinantesScroll = useRef(new Set());
 
   // Se o watchdog do boot já disparou, o CSS que esconde conteúdo foi
@@ -117,7 +118,7 @@ export function CampaignMotionProvider({children}) {
 
     lenis.on('scroll', ScrollTrigger.update);
 
-    if (import.meta.env?.DEV) window.__LENIS = lenis;
+    if (window.__ST) window.__LENIS = lenis;
 
     const tick = (time) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
@@ -126,7 +127,7 @@ export function CampaignMotionProvider({children}) {
     return () => {
       gsap.ticker.remove(tick);
       lenis.destroy();
-      if (import.meta.env?.DEV) delete window.__LENIS;
+      delete window.__LENIS;
     };
   }, [ativo]);
 
@@ -209,9 +210,7 @@ export function CampaignMotionProvider({children}) {
        * @returns {boolean} `true` na primeira vez, `false` nas seguintes
        */
       registrarEvento(chave) {
-        if (eventosEmitidos.current.has(chave)) return false;
-        eventosEmitidos.current.add(chave);
-        return true;
+        return eventosEmitidos.current.registrar(chave);
       },
     }),
     [pronto, reduzido, falhou, ativo, faixa, assinarScroll],

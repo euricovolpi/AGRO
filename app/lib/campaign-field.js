@@ -97,49 +97,43 @@ function marcacoes({w, h, vertical}) {
     lista.push(amostrarArco(cx, cy, raio, i * q, (i + 1) * q));
   }
 
-  // Grandes áreas
+  /**
+   * Cada lado de uma área vira um path próprio, e não um retângulo aberto.
+   * São mais linhas para reorganizar — e é disso que a cena vive: a spec pede
+   * de 18 a 24 sulcos no desktop, e um path por área daria 13.
+   */
+  function area(borda, meio, transversal0, transversal1, horizontal) {
+    if (horizontal) {
+      lista.push(amostrarPolilinha([[borda, transversal0], [meio, transversal0]]));
+      lista.push(amostrarPolilinha([[meio, transversal0], [meio, transversal1]]));
+      lista.push(amostrarPolilinha([[meio, transversal1], [borda, transversal1]]));
+    } else {
+      lista.push(amostrarPolilinha([[transversal0, borda], [transversal0, meio]]));
+      lista.push(amostrarPolilinha([[transversal0, meio], [transversal1, meio]]));
+      lista.push(amostrarPolilinha([[transversal1, meio], [transversal1, borda]]));
+    }
+  }
+
   if (vertical) {
     const larguraArea = (x1 - x0) * 0.55;
     const profundidade = (y1 - y0) * 0.14;
-    const ax0 = cx - larguraArea / 2;
-    const ax1 = cx + larguraArea / 2;
-    lista.push(
-      amostrarPolilinha([[ax0, y0], [ax0, y0 + profundidade], [ax1, y0 + profundidade], [ax1, y0]]),
-    );
-    lista.push(
-      amostrarPolilinha([[ax0, y1], [ax0, y1 - profundidade], [ax1, y1 - profundidade], [ax1, y1]]),
-    );
+    area(y0, y0 + profundidade, cx - larguraArea / 2, cx + larguraArea / 2, false);
+    area(y1, y1 - profundidade, cx - larguraArea / 2, cx + larguraArea / 2, false);
+
     const larguraGol = larguraArea * 0.5;
     const profGol = profundidade * 0.45;
-    const gx0 = cx - larguraGol / 2;
-    const gx1 = cx + larguraGol / 2;
-    lista.push(
-      amostrarPolilinha([[gx0, y0], [gx0, y0 + profGol], [gx1, y0 + profGol], [gx1, y0]]),
-    );
-    lista.push(
-      amostrarPolilinha([[gx0, y1], [gx0, y1 - profGol], [gx1, y1 - profGol], [gx1, y1]]),
-    );
+    area(y0, y0 + profGol, cx - larguraGol / 2, cx + larguraGol / 2, false);
+    area(y1, y1 - profGol, cx - larguraGol / 2, cx + larguraGol / 2, false);
   } else {
     const alturaArea = (y1 - y0) * 0.55;
     const profundidade = (x1 - x0) * 0.14;
-    const ay0 = cy - alturaArea / 2;
-    const ay1 = cy + alturaArea / 2;
-    lista.push(
-      amostrarPolilinha([[x0, ay0], [x0 + profundidade, ay0], [x0 + profundidade, ay1], [x0, ay1]]),
-    );
-    lista.push(
-      amostrarPolilinha([[x1, ay0], [x1 - profundidade, ay0], [x1 - profundidade, ay1], [x1, ay1]]),
-    );
+    area(x0, x0 + profundidade, cy - alturaArea / 2, cy + alturaArea / 2, true);
+    area(x1, x1 - profundidade, cy - alturaArea / 2, cy + alturaArea / 2, true);
+
     const alturaGol = alturaArea * 0.5;
     const profGol = profundidade * 0.45;
-    const gy0 = cy - alturaGol / 2;
-    const gy1 = cy + alturaGol / 2;
-    lista.push(
-      amostrarPolilinha([[x0, gy0], [x0 + profGol, gy0], [x0 + profGol, gy1], [x0, gy1]]),
-    );
-    lista.push(
-      amostrarPolilinha([[x1, gy0], [x1 - profGol, gy0], [x1 - profGol, gy1], [x1, gy1]]),
-    );
+    area(x0, x0 + profGol, cy - alturaGol / 2, cy + alturaGol / 2, true);
+    area(x1, x1 - profGol, cy - alturaGol / 2, cy + alturaGol / 2, true);
   }
 
   return lista;

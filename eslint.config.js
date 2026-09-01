@@ -35,6 +35,10 @@ export default [
       // Projeto é JavaScript com jsconfig; o parser de TS pede um
       // tsconfig.json que não existe aqui.
       '**/*.d.ts',
+      // Saída de QA: relatórios e traces gerados, não código do projeto.
+      'qa/',
+      'test-results/',
+      'playwright-report/',
     ],
   },
   ...fixupConfigRules(
@@ -245,6 +249,18 @@ export default [
     files: ['**/*.server.*'],
     rules: {
       'react-hooks/rules-of-hooks': 'off',
+    },
+  },
+  {
+    /**
+     * Os testes rodam em Vitest, não em Jest. O preset herdado do skeleton
+     * carrega `eslint-plugin-jest`, e a regra `no-deprecated-functions` tenta
+     * detectar a versão do Jest instalada — como ele não existe aqui, o lint
+     * inteiro morre. A API é a mesma, então as demais regras seguem valendo.
+     */
+    files: ['tests/**/*.js'],
+    rules: {
+      'jest/no-deprecated-functions': 'off',
     },
   },
 ];

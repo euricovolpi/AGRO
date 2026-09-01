@@ -28,3 +28,8 @@ Thumbs.db
 
 # Rascunho do storefront: a LP foi movida para a raiz. Pasta pode ser apagada.
 /agro-storefront/
+/qa/reports
+# Capturas de QA: 25 MB por rodada, regeneráveis com `npm run qa`.
+/qa/screenshots
+/test-results
+/playwright-report

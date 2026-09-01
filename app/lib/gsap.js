@@ -25,10 +25,20 @@ import {useGSAP} from '@gsap/react';
  */
 gsap.registerPlugin(ScrollTrigger);
 
-// Só em desenvolvimento: dá ao QA um jeito de pular direto para o meio de uma
-// cena pinada (`__ST.getById('reveal')`) sem adivinhar coordenadas de scroll.
-if (import.meta.env?.DEV && typeof window !== 'undefined') {
-  window.__ST = ScrollTrigger;
+/**
+ * Alça de QA: permite pular direto para o meio de uma cena pinada
+ * (`__ST.getById('reveal')`) em vez de adivinhar coordenadas de rolagem, que
+ * as próprias cenas pinadas deslocam.
+ *
+ * Em desenvolvimento fica sempre ligada. Em produção só com `?qa=1` na URL,
+ * porque o pacote de capturas precisa rodar contra o build de produção — é
+ * nele que o comportamento real acontece. São referências somente leitura
+ * para a biblioteca de animação; não expõem dado da loja nem da pessoa.
+ */
+if (typeof window !== 'undefined') {
+  const qa =
+    import.meta.env?.DEV || window.location?.search?.includes('qa=1');
+  if (qa) window.__ST = ScrollTrigger;
 }
 
 export {gsap, ScrollTrigger, useGSAP};
