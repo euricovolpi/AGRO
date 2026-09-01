@@ -25,6 +25,19 @@ Sobe em `http://localhost:3000` (ou `--port 3200`, que é o que
 a página monta inteira com o preço de referência de `app/lib/manto.js` e
 o fluxo de sacola segue testável.
 
+### Antes de qualquer deploy
+
+```bash
+npm run build && npx shopify hydrogen preview
+```
+
+`npm run build` passar não garante que a loja sobe: o build compila, mas quem
+executa o bundle é o runtime de Workers. `hydrogen preview` roda o build de
+produção no mesmo workerd que o Oxygen usa e é o único passo local que pega
+erro de inicialização do worker. Sem ele, o sintoma aparece só no deploy — que
+fica preso em "Verifying deployment has been completed" e **sai com código 0
+mesmo tendo falhado**.
+
 Para conectar a loja real:
 
 ```bash
