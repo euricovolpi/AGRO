@@ -6,18 +6,18 @@ Projeto Agro Esporte Clube — Catalão, Goiás. Temporada 2027.
 
 | Pasta | O que é |
 | --- | --- |
-| `agro-storefront/` | Loja oficial headless (Shopify Hydrogen). Landing de venda do Manto I 2027. |
+| `app/` | Loja oficial headless (Shopify Hydrogen). Campanha Vista o Começo, que vende a Camisa 01. |
 | `Agro Esporte Clube - Layout Midia Kit.fig.zip` | Mídia kit 2027 em Figma (70 MB, fora do versionamento). |
 
-## agro-storefront
+## A loja
 
 Landing page de venda da camisa oficial, no mesmo stack e nas mesmas
 convenções do `SITE CBV 2.0/cbv-storefront`. Ver
-[`agro-storefront/PRODUCT.md`](agro-storefront/PRODUCT.md) para o
+[`PRODUCT.md`](PRODUCT.md) para o
 registro de marca, sistema visual e regras de motion.
 
 ```bash
-cd agro-storefront && npm install && npm run dev
+npm install && npm run dev
 ```
 
 Sobe em `http://localhost:3000` (ou `--port 3200`, que é o que
@@ -41,7 +41,7 @@ mesmo tendo falhado**.
 Para conectar a loja real:
 
 ```bash
-cd agro-storefront && npx shopify hydrogen link
+npx shopify hydrogen link
 ```
 
 Depois disso, `PRODUTO_HANDLE` (`manto-i-2027`) passa a mandar em preço,
@@ -49,6 +49,6 @@ estoque e variantes.
 
 ## Assets
 
-Os renders do manto em `agro-storefront/public/manto/` foram extraídos do
+Os renders do manto em `public/manto/` foram extraídos do
 `.fig` do mídia kit e reenquadrados para web (WebP). O `.fig.zip` fica
 fora do git — ver `.gitignore`.
