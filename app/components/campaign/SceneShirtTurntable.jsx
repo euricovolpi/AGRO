@@ -1,4 +1,4 @@
-import {useRef} from 'react';
+import {useEffect, useRef} from 'react';
 import {gsap, ScrollTrigger, useGSAP} from '~/lib/gsap';
 import {CALLOUTS} from '~/lib/campaign-copy';
 import {MOTION, CENAS, alturaCena} from '~/lib/campaign-motion';
@@ -63,15 +63,45 @@ const JANELAS = [
 export function SceneShirtTurntable() {
   const raiz = useRef(null);
   const canvasRef = useRef(null);
-  const {reduzido} = useCampaignMotion();
-  const {cenaVista, evento} = useCampaignAnalytics();
-  const {disponivel, desenhar, total} = useImageSequence({ativo: !reduzido});
+  const {ativo} = useCampaignMotion();
+  const {cenaVista, publicarUmaVez} = useCampaignAnalytics();
+  const {disponivel, desenhar, redesenhar, preparar, total} = useImageSequence({
+    ativo,
+  });
 
-  const usaSequencia = disponivel === true && !reduzido;
+  const usaSequencia = disponivel === true && ativo;
+
+  // O restante da sequência só começa a carregar quando a cena se aproxima.
+  // Baixar 72 frames enquanto alguém lê o prólogo é gastar banda no lugar
+  // errado — e atrasa o LCP do hero.
+  useEffect(() => {
+    const alvo = raiz.current;
+    if (!alvo || disponivel !== true) return undefined;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        preparar();
+        obs.disconnect();
+      },
+      {rootMargin: '150% 0px'},
+    );
+    obs.observe(alvo);
+    return () => obs.disconnect();
+  }, [disponivel, preparar]);
+
+  // O canvas é dimensionado por CSS; mudar a janela muda a resolução de
+  // desenho e o frame atual precisa ser repintado, senão fica esticado.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !usaSequencia) return undefined;
+    const obs = new ResizeObserver(() => redesenhar(canvas));
+    obs.observe(canvas);
+    return () => obs.disconnect();
+  }, [redesenhar, usaSequencia]);
 
   useGSAP(
     () => {
-      if (reduzido || disponivel === null) return;
+      if (!ativo || disponivel === null) return;
 
       const estado = {p: 0};
 
@@ -99,7 +129,11 @@ export function SceneShirtTurntable() {
           pin: '[data-palco]',
           scrub: MOTION.scrub.product,
           onEnter: () => cenaVista(CENAS.turntable),
-          onLeave: () => evento('campaign_turntable_complete'),
+          onLeave: () =>
+            publicarUmaVez(
+              'campaign_turntable_complete',
+              'campaign_turntable_complete',
+            ),
         },
       });
 
@@ -129,7 +163,7 @@ export function SceneShirtTurntable() {
         ScrollTrigger.getById(CENAS.turntable)?.kill();
       };
     },
-    {scope: raiz, dependencies: [reduzido, disponivel, usaSequencia, total], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, disponivel, usaSequencia, total], revertOnUpdate: true},
   );
 
   return (

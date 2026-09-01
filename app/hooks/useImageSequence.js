@@ -1,18 +1,24 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 /**
- * Sequência de imagens para o turntable do produto (§7, cap. 07).
+ * Sequência de imagens para o turntable do produto.
  *
  * A sequência final (72 frames com alpha) ainda não existe no repositório.
- * Em vez de fingir um 360 deformando frente e costas, o hook sonda o frame
+ * Em vez de fingir um giro deformando frente e costas, o hook sonda o frame
  * 000: se ele responde, a cena roda com a sequência real; se não, devolve
  * `disponivel: false` e a cena assume o fallback declarado de duas faces.
  * Basta soltar os arquivos em `public/manto/turntable/` para virar a chave,
  * sem tocar no componente.
  *
- * Regras que o desenho respeita: nunca deixar o canvas vazio (o frame 000
- * pinta assim que chega), redesenhar só quando o índice muda, e limitar o DPR
- * a 2 — acima disso o custo por frame cresce sem ganho visível.
+ * Ciclo de vida, que é o que separa isto de um preloader ingênuo:
+ *
+ * - o frame 000 carrega já, para o canvas nunca aparecer vazio;
+ * - o resto só começa quando a cena está perto da viewport (`preparar`), senão
+ *   a página gasta banda no topo com imagens do meio do documento;
+ * - os lotes seguintes entram na folga do navegador e são cancelados no
+ *   unmount;
+ * - todo `ImageBitmap` é fechado ao sair — são 72 decodificações que o
+ *   coletor de lixo não recupera sozinho.
  *
  * @param {{base?: string; total?: number; ativo?: boolean}} [opcoes]
  */
@@ -25,6 +31,9 @@ export function useImageSequence({
   const [pronto, setPronto] = useState(false);
   const quadros = useRef(new Map());
   const ultimo = useRef(-1);
+  const vivoRef = useRef(true);
+  const idlesRef = useRef(new Set());
+  const preparadoRef = useRef(false);
 
   const caminho = useCallback(
     (i) => `${base}${String(i).padStart(3, '0')}.webp`,
@@ -50,6 +59,11 @@ export function useImageSequence({
               recurso = img;
             }
           }
+          if (!vivoRef.current) {
+            recurso.close?.();
+            reject(new Error('desmontado'));
+            return;
+          }
           quadros.current.set(i, recurso);
           resolve(recurso);
         };
@@ -59,60 +73,87 @@ export function useImageSequence({
     [caminho],
   );
 
+  const agendarOcioso = useCallback((fn) => {
+    const id =
+      typeof requestIdleCallback === 'function'
+        ? requestIdleCallback(fn)
+        : setTimeout(fn, 200);
+    idlesRef.current.add(id);
+    return id;
+  }, []);
+
+  // Sonda só o frame 000: barato, e responde a única pergunta que decide entre
+  // a sequência real e o fallback.
   useEffect(() => {
     if (!ativo) return undefined;
-    let vivo = true;
+    vivoRef.current = true;
 
-    async function sondar() {
-      try {
-        await carregar(0);
-      } catch {
-        if (vivo) setDisponivel(false);
-        return;
-      }
-      if (!vivo) return;
-      setDisponivel(true);
-      setPronto(true);
+    carregar(0)
+      .then(() => {
+        if (!vivoRef.current) return;
+        setDisponivel(true);
+        setPronto(true);
+      })
+      .catch(() => {
+        if (vivoRef.current) setDisponivel(false);
+      });
 
-      // Lote inicial: o suficiente para o começo do giro não engasgar.
-      const inicial = [];
-      for (let i = 1; i <= 11 && i < total; i++) inicial.push(carregar(i).catch(() => {}));
-      await Promise.all(inicial);
-
-      // O resto entra na folga do navegador.
-      const ocioso =
-        typeof requestIdleCallback === 'function'
-          ? requestIdleCallback
-          : (fn) => setTimeout(fn, 200);
-
-      let i = 12;
-      function proxima() {
-        if (!vivo || i >= total) return;
-        const lote = [];
-        for (let k = 0; k < 6 && i < total; k++, i++) {
-          lote.push(carregar(i).catch(() => {}));
-        }
-        Promise.all(lote).then(() => ocioso(proxima));
-      }
-      ocioso(proxima);
-    }
-
-    sondar();
     return () => {
-      vivo = false;
+      vivoRef.current = false;
     };
-  }, [ativo, carregar, total]);
+  }, [ativo, carregar]);
 
   /**
-   * Desenha o frame no canvas. Ignora chamadas que não mudam o índice.
+   * Libera o carregamento do restante da sequência. A cena chama isto quando
+   * está perto de entrar em tela — nunca no carregamento da página.
+   */
+  const preparar = useCallback(() => {
+    if (preparadoRef.current || disponivel !== true) return;
+    preparadoRef.current = true;
+
+    let i = 1;
+    function proximoLote() {
+      if (!vivoRef.current || i >= total) return;
+      const lote = [];
+      for (let k = 0; k < 6 && i < total; k++, i++) {
+        lote.push(carregar(i).catch(() => {}));
+      }
+      Promise.all(lote).then(() => {
+        if (vivoRef.current) agendarOcioso(proximoLote);
+      });
+    }
+    proximoLote();
+  }, [agendarOcioso, carregar, disponivel, total]);
+
+  // Fecha bitmaps e cancela trabalho pendente ao sair da rota.
+  useEffect(
+    () => () => {
+      vivoRef.current = false;
+      idlesRef.current.forEach((id) => {
+        if (typeof cancelIdleCallback === 'function') cancelIdleCallback(id);
+        clearTimeout(id);
+      });
+      idlesRef.current.clear();
+      quadros.current.forEach((recurso) => recurso.close?.());
+      quadros.current.clear();
+      ultimo.current = -1;
+      preparadoRef.current = false;
+    },
+    [],
+  );
+
+  /**
+   * Desenha o frame no canvas. Ignora chamadas que não mudam nada.
    * @param {HTMLCanvasElement | null} canvas
    * @param {number} indice
+   * @param {{forcar?: boolean}} [opcoes] `forcar` redesenha o frame atual,
+   *   usado quando o canvas muda de tamanho
    */
   const desenhar = useCallback(
-    (canvas, indice) => {
+    (canvas, indice, {forcar = false} = {}) => {
       if (!canvas) return;
       const i = Math.max(0, Math.min(total - 1, Math.round(indice)));
-      if (i === ultimo.current) return;
+      if (i === ultimo.current && !forcar) return;
 
       // Enquanto o frame exato não chegou, segura o anterior — nunca limpa a
       // tela para "esperar", que é o que cria o piscar branco.
@@ -126,24 +167,35 @@ export function useImageSequence({
       const dpr = Math.min(devicePixelRatio || 1, 2);
       const largura = canvas.clientWidth;
       const altura = canvas.clientHeight;
-      if (canvas.width !== Math.round(largura * dpr)) {
-        canvas.width = Math.round(largura * dpr);
-        canvas.height = Math.round(altura * dpr);
+      if (!largura || !altura) return;
+
+      const w = Math.round(largura * dpr);
+      const h = Math.round(altura * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
       }
 
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const rw = recurso.width;
-      const rh = recurso.height;
-      const escala = Math.min(canvas.width / rw, canvas.height / rh);
-      const w = rw * escala;
-      const h = rh * escala;
-      ctx.drawImage(recurso, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      const escala = Math.min(canvas.width / recurso.width, canvas.height / recurso.height);
+      const dw = recurso.width * escala;
+      const dh = recurso.height * escala;
+      ctx.drawImage(recurso, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh);
     },
     [carregar, total],
   );
 
-  return {disponivel, pronto, desenhar, total};
+  /** Redesenha o frame atual — para o `ResizeObserver` do canvas. */
+  const redesenhar = useCallback(
+    (canvas) => {
+      if (ultimo.current < 0) return;
+      desenhar(canvas, ultimo.current, {forcar: true});
+    },
+    [desenhar],
+  );
+
+  return {disponivel, pronto, desenhar, redesenhar, preparar, total};
 }
