@@ -387,8 +387,16 @@ export type MantoProdutoQuery = {
   product?: StorefrontAPI.Maybe<
     Pick<
       StorefrontAPI.Product,
-      'id' | 'title' | 'handle' | 'availableForSale'
+      'id' | 'title' | 'handle' | 'description' | 'availableForSale'
     > & {
+      options: Array<
+        Pick<StorefrontAPI.ProductOption, 'name'> & {
+          optionValues: Array<Pick<StorefrontAPI.ProductOptionValue, 'name'>>;
+        }
+      >;
+      featuredImage?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.Image, 'url' | 'altText' | 'width' | 'height'>
+      >;
       priceRange: {
         minVariantPrice: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
       };
@@ -396,7 +404,7 @@ export type MantoProdutoQuery = {
         nodes: Array<
           Pick<
             StorefrontAPI.ProductVariant,
-            'id' | 'title' | 'availableForSale'
+            'id' | 'title' | 'availableForSale' | 'sku'
           > & {
             price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
             compareAtPrice?: StorefrontAPI.Maybe<
@@ -414,40 +422,6 @@ export type MantoProdutoQuery = {
       };
     }
   >;
-};
-
-export type PrimeiraVarianteQueryVariables = StorefrontAPI.Exact<{
-  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
-  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
-}>;
-
-export type PrimeiraVarianteQuery = {
-  products: {
-    nodes: Array<
-      Pick<StorefrontAPI.Product, 'id'> & {
-        variants: {
-          nodes: Array<
-            Pick<
-              StorefrontAPI.ProductVariant,
-              'id' | 'title' | 'availableForSale'
-            > & {
-              price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
-              selectedOptions: Array<
-                Pick<StorefrontAPI.SelectedOption, 'name' | 'value'>
-              >;
-              image?: StorefrontAPI.Maybe<
-                Pick<
-                  StorefrontAPI.Image,
-                  'url' | 'altText' | 'width' | 'height'
-                >
-              >;
-              product: Pick<StorefrontAPI.Product, 'title' | 'handle'>;
-            }
-          >;
-        };
-      }
-    >;
-  };
 };
 
 export type ArticleQueryVariables = StorefrontAPI.Exact<{
@@ -1042,13 +1016,9 @@ interface GeneratedQueryTypes {
     return: FooterQuery;
     variables: FooterQueryVariables;
   };
-  '#graphql\n  query MantoProduto(\n    $handle: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(country: $country, language: $language) {\n    product(handle: $handle) {\n      id\n      title\n      handle\n      availableForSale\n      priceRange {\n        minVariantPrice { amount currencyCode }\n      }\n      variants(first: 1) {\n        nodes {\n          id\n          title\n          availableForSale\n          price { amount currencyCode }\n          compareAtPrice { amount currencyCode }\n          selectedOptions { name value }\n          image { url altText width height }\n          product { title handle }\n        }\n      }\n    }\n  }\n': {
+  '#graphql\n  query MantoProduto(\n    $handle: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(country: $country, language: $language) {\n    product(handle: $handle) {\n      id\n      title\n      handle\n      description\n      availableForSale\n      options {\n        name\n        optionValues { name }\n      }\n      featuredImage { url altText width height }\n      priceRange {\n        minVariantPrice { amount currencyCode }\n      }\n      variants(first: 100) {\n        nodes {\n          id\n          title\n          availableForSale\n          sku\n          price { amount currencyCode }\n          compareAtPrice { amount currencyCode }\n          selectedOptions { name value }\n          image { url altText width height }\n          product { title handle }\n        }\n      }\n    }\n  }\n': {
     return: MantoProdutoQuery;
     variables: MantoProdutoQueryVariables;
-  };
-  '#graphql\n  query PrimeiraVariante($country: CountryCode, $language: LanguageCode)\n  @inContext(country: $country, language: $language) {\n    products(first: 1) {\n      nodes {\n        id\n        variants(first: 1) {\n          nodes {\n            id\n            title\n            availableForSale\n            price { amount currencyCode }\n            selectedOptions { name value }\n            image { url altText width height }\n            product { title handle }\n          }\n        }\n      }\n    }\n  }\n': {
-    return: PrimeiraVarianteQuery;
-    variables: PrimeiraVarianteQueryVariables;
   };
   '#graphql\n  query Article(\n    $articleHandle: String!\n    $blogHandle: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(language: $language, country: $country) {\n    blog(handle: $blogHandle) {\n      handle\n      articleByHandle(handle: $articleHandle) {\n        handle\n        title\n        contentHtml\n        publishedAt\n        author: authorV2 {\n          name\n        }\n        image {\n          id\n          altText\n          url\n          width\n          height\n        }\n        seo {\n          description\n          title\n        }\n      }\n    }\n  }\n': {
     return: ArticleQuery;

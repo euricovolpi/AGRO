@@ -22,31 +22,27 @@ export const CLUBE = {
   fundacao: '2026',
 };
 
-/** Preço de referência enquanto não há loja conectada. */
+/**
+ * Preço de referência, usado só quando não há catálogo conectado.
+ *
+ * Nunca entra em soma: a interface o exibe rotulado como referência e mantém a
+ * compra desabilitada. Preço que o checkout não cobre é preço mentiroso.
+ */
 export const PRECO_BASE = {amount: '349.90', currencyCode: 'BRL'};
-export const PRECO_DE = {amount: '429.90', currencyCode: 'BRL'};
 
 /**
- * Modelagens. "Torcedor" é a peça de arquibancada; "Atleta" é o corte de jogo.
- * O acréscimo é somado sobre o preço base.
+ * Descrição de cada modelagem, indexada pelo valor da opção no catálogo.
+ *
+ * Só texto. O preço de cada modelagem vem da variante correspondente no
+ * Shopify — aqui não existe acréscimo a somar.
  */
-export const MODELAGENS = [
-  {
-    id: 'torcedor',
-    nome: 'Torcedor',
-    resumo: 'Corte reto, caimento solto. A camisa de vestir todo dia.',
-    acrescimo: 0,
-  },
-  {
-    id: 'atleta',
-    nome: 'Atleta',
-    resumo: 'Corte de jogo, colado ao corpo. Mesma malha do gramado.',
-    acrescimo: 60,
-  },
-];
+export const RESUMO_MODELAGEM = {
+  Torcedor: 'Corte reto, caimento solto. A camisa de vestir todo dia.',
+  Atleta: 'Corte de jogo, colado ao corpo. Mesma malha do gramado.',
+};
 
-/** Nome e número nas costas: acréscimo único, aplicado uma vez por peça. */
-export const PERSONALIZACAO = {valor: 49.9, maxNome: 12};
+/** Limites do que pode ser gravado nas costas. */
+export const PERSONALIZACAO = {maxNome: 12, maxNumero: 2};
 
 export const TAMANHOS = [
   {id: 'P', torax: '96–101', comprimento: '70'},
@@ -185,45 +181,58 @@ export const FAQ = [
 ];
 
 /**
- * Produto de fallback: mantém a página inteira — preço, parcelas, botão — de
- * pé quando não há loja conectada ou a Storefront API falha.
+ * Produto de referência: mantém a narrativa e o preço indicativo de pé quando
+ * não há catálogo conectado ou a Storefront API falha.
+ *
+ * `temCatalogo: false` é o que impede a compra. Nunca emprestamos a variante
+ * de outro produto para o fluxo "parecer" funcional — o carrinho passaria a
+ * conter uma peça que ninguém escolheu.
+ *
  * @param {string} [motivo]
  */
 export function produtoFallback(motivo = 'sem-loja') {
   return {
     id: null,
     handle: PRODUTO_HANDLE,
-    title: 'Manto I 2027',
+    title: 'Edição Fundadora',
     motivo,
     mock: true,
+    temCatalogo: false,
     preco: PRECO_BASE,
-    precoDe: PRECO_DE,
-    variantId: null,
-    variante: null,
-    availableForSale: true,
+    precoDe: null,
+    opcoes: [],
+    variantes: [],
   };
 }
 
 /**
  * Normaliza o que veio da Storefront API para o formato que a página lê.
+ *
+ * Traz o conjunto completo de variantes e opções: a seleção acontece no
+ * cliente, mas sobre dados reais do catálogo, e o preço mostrado é sempre o
+ * da variante escolhida.
+ *
  * @param {any} product
  */
 export function normalizarProduto(product) {
   if (!product?.id) return null;
-  const variante =
-    product.selectedOrFirstAvailableVariant ?? product.variants?.nodes?.[0];
+
+  const variantes = product.variants?.nodes ?? [];
+  const primeira =
+    variantes.find((v) => v.availableForSale) ?? variantes[0] ?? null;
+
   return {
     id: product.id,
     handle: product.handle,
-    title: product.title,
+    /** Nome comercial exibido; o do catálogo manda. */
+    title: product.title || 'Edição Fundadora',
     motivo: null,
     mock: false,
-    preco: variante?.price ?? product.priceRange?.minVariantPrice ?? PRECO_BASE,
-    precoDe: variante?.compareAtPrice ?? null,
-    variantId: variante?.id ?? null,
-    // A variante inteira segue junto: o carrinho otimista do Hydrogen precisa
-    // dela para desenhar a linha antes da resposta do servidor.
-    variante: variante ?? null,
-    availableForSale: product.availableForSale ?? true,
+    temCatalogo: variantes.length > 0,
+    opcoes: product.options ?? [],
+    variantes,
+    /** Preço de vitrine antes de qualquer escolha. */
+    preco: primeira?.price ?? product.priceRange?.minVariantPrice ?? PRECO_BASE,
+    precoDe: primeira?.compareAtPrice ?? null,
   };
 }
