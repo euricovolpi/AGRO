@@ -17,27 +17,27 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneDetails() {
   const raiz = useRef(null);
-  const {reduzido} = useCampaignMotion();
+  const {ativo} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
-  const [ativo, setAtivo] = useState(0);
+  const [indiceAtivo, setIndiceAtivo] = useState(0);
 
   useGSAP(
     () => {
       const itens = gsap.utils.toArray('[data-detalhe]');
 
-      // O índice acompanha a leitura mesmo em movimento reduzido — é
+      // O índice acompanha a leitura mesmo sem movimento — é
       // orientação, não animação.
       const marcadores = itens.map((item, i) =>
         ScrollTrigger.create({
           trigger: item,
           start: 'top 62%',
           end: 'bottom 38%',
-          onToggle: ({isActive}) => isActive && setAtivo(i),
+          onToggle: ({isActive}) => isActive && setIndiceAtivo(i),
           onEnter: i === 0 ? () => cenaVista(CENAS.detalhes) : undefined,
         }),
       );
 
-      if (reduzido) return () => marcadores.forEach((m) => m.kill());
+      if (!ativo) return () => marcadores.forEach((m) => m.kill());
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -71,7 +71,7 @@ export function SceneDetails() {
         tweens.forEach((t) => t.scrollTrigger?.kill());
       };
     },
-    {scope: raiz, dependencies: [reduzido], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
   );
 
   return (
@@ -88,7 +88,7 @@ export function SceneDetails() {
       <div className="env detalhes-grade">
         <ol className="detalhes-indice" aria-hidden="true">
           {DETALHES_CAMPANHA.map((d, i) => (
-            <li key={d.indice} className={i === ativo ? 'ativo' : undefined}>
+            <li key={d.indice} className={i === indiceAtivo ? 'ativo' : undefined}>
               <span>{d.indice}</span> {d.rotulo}
             </li>
           ))}

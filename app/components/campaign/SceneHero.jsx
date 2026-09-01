@@ -15,12 +15,12 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneHero() {
   const raiz = useRef(null);
-  const {reduzido} = useCampaignMotion();
+  const {ativo} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
 
   useGSAP(
     () => {
-      if (reduzido) return;
+      if (!ativo) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -63,7 +63,7 @@ export function SceneHero() {
         ScrollTrigger.getById(CENAS.hero)?.kill();
       };
     },
-    {scope: raiz, dependencies: [reduzido], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
   );
 
   return (

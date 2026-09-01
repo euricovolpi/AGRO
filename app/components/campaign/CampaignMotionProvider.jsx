@@ -1,4 +1,12 @@
-import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {gsap, ScrollTrigger} from '~/lib/gsap';
 import Lenis from 'lenis';
 import {useReducedMotion} from '~/hooks/useReducedMotion';
@@ -7,8 +15,11 @@ import {faixaDe} from '~/lib/campaign-motion';
 const MotionContext = createContext({
   pronto: false,
   reduzido: false,
+  falhou: false,
+  ativo: false,
   faixa: 'desktop',
-  registrarCena: () => {},
+  registrarEvento: () => false,
+  assinarScroll: () => () => {},
 });
 
 export function useCampaignMotion() {
@@ -16,43 +27,86 @@ export function useCampaignMotion() {
 }
 
 /**
- * Ponte única entre Lenis, GSAP e ScrollTrigger (§6 da spec).
+ * Ponte única entre Lenis, GSAP e ScrollTrigger.
  *
  * Uma instância para a página inteira. Cada cena cria a própria timeline com
  * `useGSAP({scope})`, que limpa sozinha ao desmontar — assim voltar pelo
  * histórico do navegador não deixa trigger órfão prendendo o scroll.
  *
  * O provider nunca decide o que aparece: o conteúdo já nasce visível no SSR.
- * Ele só liga o motor e diz às cenas quando é seguro animar.
+ * Ele liga o motor, avisa às cenas quando é seguro animar, e confirma ao
+ * watchdog do boot que o movimento assumiu o controle.
  *
  * @param {{children: React.ReactNode}}
  */
 export function CampaignMotionProvider({children}) {
   const reduzido = useReducedMotion();
   const [pronto, setPronto] = useState(false);
+  const [falhou, setFalhou] = useState(false);
   const [faixa, setFaixa] = useState('desktop');
-  const cenasVistas = useRef(new Set());
+  const eventosEmitidos = useRef(new Set());
+  const assinantesScroll = useRef(new Set());
 
-  // O registro do GSAP acontece no import de `~/lib/gsap` — cedo o bastante
-  // para as cenas filhas encontrarem o ScrollTrigger pronto.
+  // Se o watchdog do boot já disparou, o CSS que esconde conteúdo foi
+  // removido. Animar agora reesconderia tudo por estilo inline — exatamente o
+  // que o fail-open existe para impedir.
+  useEffect(() => {
+    setFalhou(document.documentElement.classList.contains('motion-failed'));
+  }, []);
+
+  const ativo = !reduzido && !falhou;
+
   useEffect(() => {
     setFaixa(faixaDe());
   }, []);
 
   // Espelha a preferência de movimento no <html>. O script inline do root já
-  // marcou a classe antes da primeira pintura; aqui só mantemos em dia se o
+  // marcou as classes antes da primeira pintura; aqui só mantemos em dia se o
   // usuário mudar a preferência com a página aberta.
   useEffect(() => {
-    const raiz = document.documentElement;
-    raiz.classList.add('motion-ready');
-    raiz.classList.toggle('reduce-motion', reduzido);
+    document.documentElement.classList.toggle('reduce-motion', reduzido);
   }, [reduzido]);
 
-  // Lenis: existe só para dar continuidade à rolagem. Em reduced motion não é
-  // instanciado — suavizar rolagem é exatamente o tipo de movimento induzido
-  // que a preferência pede para desligar.
+  /**
+   * Hub de scroll: um listener para a página toda.
+   *
+   * Header e tema da seção clara precisam saber a posição da rolagem. Cada um
+   * com o próprio listener significa leituras de layout repetidas por evento e
+   * caminhos de atualização competindo com o Lenis. Aqui a leitura é uma só,
+   * coalescida por frame, e os assinantes recebem o valor pronto.
+   */
   useEffect(() => {
-    if (reduzido) return undefined;
+    let frame = 0;
+    function despachar() {
+      frame = 0;
+      const y = scrollY;
+      assinantesScroll.current.forEach((fn) => fn(y));
+    }
+    function agendar() {
+      if (frame) return;
+      frame = requestAnimationFrame(despachar);
+    }
+    addEventListener('scroll', agendar, {passive: true});
+    addEventListener('resize', agendar);
+    despachar();
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      removeEventListener('scroll', agendar);
+      removeEventListener('resize', agendar);
+    };
+  }, []);
+
+  const assinarScroll = useCallback((fn) => {
+    assinantesScroll.current.add(fn);
+    if (typeof window !== 'undefined') fn(scrollY);
+    return () => assinantesScroll.current.delete(fn);
+  }, []);
+
+  // Lenis existe só para dar continuidade à rolagem. Em movimento reduzido ou
+  // com o boot falho não é instanciado — suavizar rolagem é exatamente o tipo
+  // de movimento induzido que a preferência pede para desligar.
+  useEffect(() => {
+    if (!ativo) return undefined;
 
     const lenis = new Lenis({
       lerp: 0.085,
@@ -72,13 +126,17 @@ export function CampaignMotionProvider({children}) {
     return () => {
       gsap.ticker.remove(tick);
       lenis.destroy();
+      if (import.meta.env?.DEV) delete window.__LENIS;
     };
-  }, [reduzido]);
+  }, [ativo]);
 
   /**
    * Refresh é caro e mede a página inteira. Só depois que fonte e imagem
    * principal assentaram — senão os pins nascem calculados com a altura
    * errada e saltam quando a tipografia troca.
+   *
+   * É também aqui que o boot é confirmado: a partir deste ponto o movimento
+   * assumiu, e o watchdog do documento pode ser cancelado.
    */
   useEffect(() => {
     let vivo = true;
@@ -102,6 +160,7 @@ export function CampaignMotionProvider({children}) {
       if (!vivo) return;
       ScrollTrigger.refresh();
       setPronto(true);
+      window.__agroBootOk?.();
     }
 
     liberar();
@@ -134,19 +193,28 @@ export function CampaignMotionProvider({children}) {
     () => ({
       pronto,
       reduzido,
+      falhou,
+      ativo,
       faixa,
+      assinarScroll,
       /**
-       * Marca a cena como vista, uma vez por pageview. Devolve `false` quando
-       * já foi contada, para o chamador não emitir evento repetido.
-       * @param {string} cena
+       * Marca um evento como emitido nesta pageview e diz se ele é inédito.
+       *
+       * O conjunto vive no provider, não nas cenas: com scrub, atravessar a
+       * mesma cena de novo — rolando para cima e voltando — dispara o callback
+       * de entrada outra vez, e um marco narrativo contado duas vezes
+       * corrompe o funil.
+       *
+       * @param {string} chave
+       * @returns {boolean} `true` na primeira vez, `false` nas seguintes
        */
-      registrarCena(cena) {
-        if (cenasVistas.current.has(cena)) return false;
-        cenasVistas.current.add(cena);
+      registrarEvento(chave) {
+        if (eventosEmitidos.current.has(chave)) return false;
+        eventosEmitidos.current.add(chave);
         return true;
       },
     }),
-    [pronto, reduzido, faixa],
+    [pronto, reduzido, falhou, ativo, faixa, assinarScroll],
   );
 
   return <MotionContext.Provider value={valor}>{children}</MotionContext.Provider>;

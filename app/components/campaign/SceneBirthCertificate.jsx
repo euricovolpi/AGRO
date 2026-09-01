@@ -18,7 +18,7 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneBirthCertificate() {
   const raiz = useRef(null);
-  const {reduzido} = useCampaignMotion();
+  const {ativo, assinarScroll} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
 
   useGSAP(
@@ -34,7 +34,7 @@ export function SceneBirthCertificate() {
       // medição por scroll, de um elemento só, é o que não erra.
       const secao = raiz.current;
       let tema = null;
-      function avaliarTema() {
+      const desassinar = assinarScroll(() => {
         const r = secao.getBoundingClientRect();
         const claro = r.top <= 72 && r.bottom > 72;
         const novo = claro ? 'papel' : 'noite';
@@ -42,18 +42,14 @@ export function SceneBirthCertificate() {
         tema = novo;
         document.documentElement.dataset.tema = novo;
         if (claro) cenaVista(CENAS.certidao);
-      }
-      addEventListener('scroll', avaliarTema, {passive: true});
-      addEventListener('resize', avaliarTema);
-      avaliarTema();
+      });
 
       const limparTema = () => {
-        removeEventListener('scroll', avaliarTema);
-        removeEventListener('resize', avaliarTema);
+        desassinar();
         delete document.documentElement.dataset.tema;
       };
 
-      if (reduzido) return limparTema;
+      if (!ativo) return limparTema;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -82,7 +78,7 @@ export function SceneBirthCertificate() {
         limparTema();
       };
     },
-    {scope: raiz, dependencies: [reduzido], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, assinarScroll], revertOnUpdate: true},
   );
 
   return (

@@ -19,7 +19,7 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneFieldMorph() {
   const raiz = useRef(null);
-  const {reduzido, faixa} = useCampaignMotion();
+  const {ativo, faixa} = useCampaignMotion();
   const {cenaVista} = useCampaignAnalytics();
   const [vertical, setVertical] = useState(false);
 
@@ -43,7 +43,7 @@ export function SceneFieldMorph() {
       const paths = gsap.utils.toArray('[data-linha-campo]');
       if (!paths.length) return;
 
-      if (reduzido) {
+      if (!ativo) {
         // Estado final estático: o campo montado, com a legenda ao lado.
         paths.forEach((p, i) => {
           p.setAttribute('d', caminhoInterpolado(geo.linhas[i], 1));
@@ -101,7 +101,7 @@ export function SceneFieldMorph() {
         ScrollTrigger.getById(CENAS.campo)?.kill();
       };
     },
-    {scope: raiz, dependencies: [reduzido, geo, faixa], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo, geo, faixa], revertOnUpdate: true},
   );
 
   return (

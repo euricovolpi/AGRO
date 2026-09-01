@@ -22,17 +22,30 @@ import {PageLayout} from '~/components/PageLayout';
 import {Grao} from '~/components/Fx';
 
 /**
- * Roda antes da primeira pintura. Três decisões que não podem esperar a
- * hidratação, senão viram flash na tela:
+ * Roda antes da primeira pintura. Decide o que não pode esperar a hidratação,
+ * porque esperar viraria flash na tela:
  *
  * 1. `motion-ready` libera os estados iniciais escondidos do CSS. Sem JS a
  *    classe nunca entra e todo o conteúdo nasce — e permanece — visível.
  * 2. `reduce-motion` desliga esses mesmos estados para quem pediu menos
  *    movimento.
  * 3. `intro-vista` mata o prólogo em visita repetida ou entrada por hash,
- *    antes de ele chegar a aparecer.
+ *    antes de ele chegar a aparecer; e, quando o prólogo vai rodar,
+ *    `intro-ativa` já esconde o header desde o primeiro quadro, em vez de
+ *    deixá-lo desaparecer por transição depois da hidratação.
+ *
+ * E instala o watchdog do boot. Esconder conteúdo por CSS é uma promessa de
+ * que o JavaScript vai devolvê-lo; se o bundle não carregar, a hidratação
+ * falhar ou um chunk quebrar, essa promessa fica sem dono e a página fica
+ * vazia. Passados 2,5 s sem o provider confirmar, o watchdog remove as
+ * classes que escondem, marca `motion-failed` e o documento volta a ser
+ * legível. O provider, por sua vez, vê `motion-failed` e não anima — senão
+ * reesconderia tudo por estilo inline.
+ *
+ * Qualquer exceção aqui também termina em fail-open: sem as classes, nada no
+ * CSS esconde coisa alguma.
  */
-const BOOT_MOTION = `(function(){try{var d=document.documentElement;d.classList.add('motion-ready');if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('reduce-motion');}if(sessionStorage.getItem('agro-intro')==='1'||window.location.hash){d.classList.add('intro-vista');}}catch(e){}})();`;
+const BOOT_MOTION = `(function(){var d=document.documentElement;try{d.classList.add('motion-ready','motion-booting');if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('reduce-motion');}if(sessionStorage.getItem('agro-intro')==='1'||window.location.hash){d.classList.add('intro-vista');}else if(!d.classList.contains('reduce-motion')){d.classList.add('intro-ativa');}var t=setTimeout(function(){d.classList.remove('motion-ready','motion-booting');d.classList.add('motion-failed');},2500);window.__agroBootOk=function(){clearTimeout(t);d.classList.remove('motion-booting');};}catch(e){d.classList.remove('motion-ready','motion-booting');d.classList.add('motion-failed');}})();`;
 
 /**
  * Evita refetch das queries de root em navegação interna.
