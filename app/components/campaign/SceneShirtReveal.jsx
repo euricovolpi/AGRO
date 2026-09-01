@@ -17,12 +17,12 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneShirtReveal() {
   const raiz = useRef(null);
-  const {reduzido} = useCampaignMotion();
-  const {cenaVista, evento} = useCampaignAnalytics();
+  const {ativo} = useCampaignMotion();
+  const {cenaVista, publicarUmaVez} = useCampaignAnalytics();
 
   useGSAP(
     () => {
-      if (reduzido) return;
+      if (!ativo) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -40,7 +40,7 @@ export function SceneShirtReveal() {
           scrub: MOTION.scrub.narrative,
           onEnter: () => {
             cenaVista(CENAS.reveal);
-            evento('campaign_product_reveal');
+            publicarUmaVez('campaign_product_reveal', 'campaign_product_reveal');
           },
         },
       });
@@ -60,16 +60,19 @@ export function SceneShirtReveal() {
           0.54,
         )
         .fromTo('[data-chao]', {opacity: 0, scaleX: 0.4}, {opacity: 1, scaleX: 1, duration: 0.18}, 0.56)
-        .to('[data-marca] .mask-interna', {yPercent: 0, duration: 0.18}, 0.62)
-        .to('[data-selo-reveal]', {opacity: 1, y: 0, duration: 0.14}, 0.74)
-        .to('[data-tecnico]', {opacity: 1, y: 0, duration: 0.14}, 0.8)
-        .to('[data-camisa]', {scale: 0.99, duration: 0.14}, 0.86);
+        // Índice primeiro e pequeno; o nome do produto depois e grande. A
+        // ordem é a hierarquia: quem entra por último e maior é quem a pessoa
+        // leva para o checkout.
+        .to('[data-reveal-indice]', {opacity: 1, y: 0, duration: 0.12}, 0.76)
+        .to('[data-reveal-nome] .mask-interna', {yPercent: 0, duration: 0.16}, 0.82)
+        .to('[data-tecnico]', {opacity: 1, y: 0, duration: 0.12}, 0.88)
+        .to('[data-camisa]', {scale: 0.99, duration: 0.12}, 0.9);
 
       return () => {
         ScrollTrigger.getById(CENAS.reveal)?.kill();
       };
     },
-    {scope: raiz, dependencies: [reduzido], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
   );
 
   return (
@@ -99,9 +102,13 @@ export function SceneShirtReveal() {
           </span>
         </p>
 
-        <h2 className="mask reveal-marca" id="reveal-marca" data-marca="">
+        <p className="reveal-indice" data-reveal-indice="" data-surge="">
+          {REVEAL.indice}
+        </p>
+
+        <h2 className="mask reveal-nome" id="reveal-marca" data-reveal-nome="">
           <span className="mask-linha">
-            <span className="mask-interna">{REVEAL.marca}</span>
+            <span className="mask-interna">{REVEAL.nome}</span>
           </span>
         </h2>
 
@@ -118,9 +125,6 @@ export function SceneShirtReveal() {
         <i className="reveal-chao" data-chao="" aria-hidden="true" />
 
         <div className="reveal-pe">
-          <p className="reveal-edicao" data-selo-reveal="" data-surge="">
-            {REVEAL.selo}
-          </p>
           <p className="reveal-tecnico" data-tecnico="" data-surge="">
             {REVEAL.tecnico}
           </p>

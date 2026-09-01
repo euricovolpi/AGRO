@@ -17,13 +17,13 @@ import {useCampaignAnalytics} from '~/hooks/useCampaignMotion';
  */
 export function SceneFinalStatement({produto}) {
   const raiz = useRef(null);
-  const {reduzido} = useCampaignMotion();
-  const {cenaVista, evento} = useCampaignAnalytics();
+  const {ativo} = useCampaignMotion();
+  const {cenaVista, publicarUmaVez} = useCampaignAnalytics();
   const vezes = parcelasIdeais(produto?.preco);
 
   useGSAP(
     () => {
-      if (reduzido) return;
+      if (!ativo) return;
 
       // O CSS esconde a linha com translateY(108%), mas o GSAP converte esse
       // percentual em pixels e o guarda no canal `y` — que soma com o
@@ -58,7 +58,7 @@ export function SceneFinalStatement({produto}) {
         ScrollTrigger.getById(CENAS.final)?.kill();
       };
     },
-    {scope: raiz, dependencies: [reduzido], revertOnUpdate: true},
+    {scope: raiz, dependencies: [ativo], revertOnUpdate: true},
   );
 
   return (
@@ -91,7 +91,9 @@ export function SceneFinalStatement({produto}) {
 
           <div className="final-preco" data-final-preco="" data-surge="">
             <p className="final-produto">{FINAL.produto}</p>
-            <p className="final-tecnico">{FINAL.tecnico}</p>
+            <p className="final-tecnico">
+              {FINAL.indice} · {FINAL.tecnico}
+            </p>
             <p className="final-valor">
               {formatPreco(produto?.preco)}
               {vezes > 1 ? (
@@ -108,7 +110,11 @@ export function SceneFinalStatement({produto}) {
             href="#comprar"
             data-final-cta=""
             data-surge=""
-            onClick={() => evento('campaign_cta_click', {placement: 'final'})}
+            onClick={() =>
+              publicarUmaVez('campaign_cta_click', 'campaign_cta_click:final', {
+                placement: 'final',
+              })
+            }
           >
             {CTA.comSeta}
           </a>

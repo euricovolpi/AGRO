@@ -70,7 +70,7 @@ export function StickyBuyBar({produto}) {
           aria-hidden="true"
         />
         <div>
-          <strong>{CANON.campanhaCurta}</strong>
+          <strong>{CANON.produto}</strong>
           <span>{formatPreco(produto?.preco)}</span>
         </div>
       </div>

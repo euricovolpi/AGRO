@@ -7,6 +7,16 @@
  * porque reflete operação e não narrativa.
  */
 
+/**
+ * Hierarquia do nome — a ordem importa e não é negociável.
+ *
+ *   EDIÇÃO FUNDADORA   nome comercial: maior peso, maior escala, é o que a
+ *                      pessoa reconhece no reveal, na venda, na sacola e no
+ *                      checkout
+ *   CAMISA 01          índice histórico: selo, capítulo, número de coleção —
+ *                      nunca compete com o nome
+ *   MANTO I 2027       identificação técnica: handle, SKU, subtítulo discreto
+ */
 export const CANON = {
   clube: 'Agro Esporte Clube',
   sigla: 'AGRO EC',
@@ -15,9 +25,13 @@ export const CANON = {
   praca: 'Catalão · Goiás',
   fundacao: '2026',
   temporada: '2027',
-  produto: 'Manto I 2027',
-  campanha: 'Camisa 01 — Edição Fundadora',
-  campanhaCurta: 'Camisa 01',
+  /** Nome principal do produto, em toda superfície de venda. */
+  produto: 'Edição Fundadora',
+  /** Índice histórico, secundário. */
+  indice: 'Camisa 01',
+  /** Identificação técnica/catalogal, terciária. */
+  tecnico: 'Manto I 2027',
+  campanha: 'Edição Fundadora — Agro Esporte Clube',
   fornecedor: 'VOLT Sport',
   lema: 'FÉ · TRABALHO · LEGADO',
   handle: 'manto-i-2027',
@@ -87,8 +101,10 @@ export const ESCUDO = {
 export const REVEAL = {
   frase1: 'O primeiro uniforme.',
   frase2: 'A primeira camisa.',
-  marca: 'Camisa 01',
-  selo: 'Edição Fundadora',
+  /** Entra antes, pequeno: é índice de coleção, não o nome da peça. */
+  indice: 'Camisa 01',
+  /** Entra depois e domina a tela: este é o nome do produto. */
+  nome: 'Edição Fundadora',
   tecnico: 'Manto I · Temporada 2027',
 };
 
@@ -96,7 +112,7 @@ export const REVEAL = {
 export const CALLOUTS = [
   {id: '01', indice: '01', titulo: 'Escudo AGRO', lado: 'direita'},
   {id: '02', indice: '02', titulo: 'Acabamento dourado', lado: 'esquerda'},
-  {id: '03', indice: '03', titulo: 'Identidade 2026', lado: 'direita'},
+  {id: '03', indice: '03', titulo: 'Identidade 2027', lado: 'direita'},
   {id: '04', indice: '04', titulo: 'Primeiro manto da história', lado: 'esquerda'},
 ];
 
@@ -165,13 +181,17 @@ export const AINDA = {
 export const FINAL = {
   titulo: ['Um dia ela será história.', 'Hoje ela é o começo.'],
   destaque: 'começo',
-  produto: 'Camisa 01 — Edição Fundadora',
+  produto: 'Edição Fundadora',
+  indice: 'Camisa 01',
   tecnico: 'Manto I · Temporada 2027',
 };
 
 /** 11 — Configurador. */
 export const COMPRA = {
   titulo: 'Faça parte do primeiro capítulo.',
+  esgotado: 'Esgotado',
+  indisponivel: 'Combinação indisponível',
+  semLoja: 'Loja em ativação',
   subtitulo:
     'Escolha modelagem, tamanho e, se quiser, leve seu nome para as costas da primeira camisa da história do clube.',
   cta: 'Vista o começo',
@@ -197,7 +217,7 @@ export const RODAPE = {
 };
 
 export const META = {
-  title: 'Camisa 01 — Manto I 2027 | Agro Esporte Clube',
+  title: 'Edição Fundadora — Agro Esporte Clube',
   description:
-    'Vista o começo. Conheça a primeira camisa oficial do Agro Esporte Clube, fundado em Catalão, Goiás. Manto I da temporada 2027.',
+    'Vista o começo. A Edição Fundadora é a primeira camisa oficial do Agro Esporte Clube, fundado em Catalão, Goiás. Camisa 01 da temporada 2027.',
 };
